@@ -74,8 +74,12 @@
             white-space: nowrap;
             cursor: pointer;
             color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
         }
         .profile-chip.active { background: rgba(251, 191, 36, 0.2); border-color: var(--accent-gold); color: var(--accent-gold); font-weight: 600; }
+        .profile-chip .delete-btn { font-size: 0.7rem; color: #ef4444; border: none; background: none; cursor: pointer; margin-left: 0.2rem; }
 
         .section-divider { border-top: 1px solid var(--border-color); margin: 1rem 0; padding-top: 1rem; }
         .section-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
@@ -138,7 +142,7 @@
     </header>
 
     <div class="live-bar">
-        <div><strong>Live Time:</strong> <span id="liveClock">Initializing...</span></div>
+        <div><strong>Live Time:</strong> <span id="liveClock">Starting...</span></div>
         <div><strong>Location:</strong> <span id="currentLocDisplay">Detecting...</span></div>
     </div>
 
@@ -147,7 +151,7 @@
         <div class="profile-summary-text">
             <h3 id="sumName">Profile: --</h3>
             <p id="sumMeta">DOB: -- | TOB: --</p>
-            <div id="sumTithi" class="tithi-badge">Tithi: Calculating...</div>
+            <div id="sumTithi" class="tithi-badge">Rashi: Calculating...</div>
         </div>
         <button class="btn-toggle-edit" type="button">✏️ Edit / Switch Profile</button>
     </div>
@@ -175,7 +179,7 @@
                 </div>
                 <div style="flex: 1;">
                     <label for="tob">Time of Birth</label>
-                    <input type="time" id="tob" step="1" required>
+                    <input type="time" id="tob" required>
                 </div>
             </div>
 
@@ -338,13 +342,27 @@ function runLiveClock() {
 function requestLocation() {
     const locDisplay = document.getElementById('currentLocDisplay');
     if (!locDisplay) return;
+    
+    locDisplay.innerText = "Requesting GPS...";
+
     if (!navigator.geolocation) {
-        locDisplay.innerText = "Delhi/NCR (Fallback)";
+        locDisplay.innerText = "New Delhi / NCR (Fallback)";
         return;
     }
-    locDisplay.innerText = "Requesting GPS...";
+
+    let hasResponded = false;
+    const timeoutTimer = setTimeout(() => {
+        if (!hasResponded) {
+            hasResponded = true;
+            locDisplay.innerText = "New Delhi / NCR (Default)";
+        }
+    }, 3000);
+
     navigator.geolocation.getCurrentPosition(
         (pos) => {
+            if (hasResponded) return;
+            hasResponded = true;
+            clearTimeout(timeoutTimer);
             const lat = pos.coords.latitude.toFixed(2);
             const lon = pos.coords.longitude.toFixed(2);
             document.getElementById('cLat').value = lat;
@@ -353,11 +371,14 @@ function requestLocation() {
             locDisplay.innerText = `GPS Active (${lat}, ${lon})`;
         },
         (err) => {
-            locDisplay.innerText = "Delhi/NCR (Default)";
+            if (hasResponded) return;
+            hasResponded = true;
+            clearTimeout(timeoutTimer);
+            locDisplay.innerText = "New Delhi / NCR (Default)";
             document.getElementById('cLat').value = 28.61;
             document.getElementById('cLon').value = 77.20;
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
     );
 }
 
@@ -367,6 +388,69 @@ function handleCityChange(selectEl, latId, lonId) {
         document.getElementById(latId).value = lat;
         document.getElementById(lonId).value = lon;
     }
+}
+
+/* --- LOCALSTORAGE & PROFILE MANAGEMENT --- */
+
+function renderProfileChips() {
+    const container = document.getElementById('profileChipsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (savedProfiles.length === 0) {
+        container.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);">No saved profiles yet.</span>`;
+        return;
+    }
+
+    savedProfiles.forEach((p, index) => {
+        const chip = document.createElement('div');
+        chip.className = `profile-chip ${index === activeProfileIndex ? 'active' : ''}`;
+        chip.innerHTML = `
+            <span onclick="loadProfile(${index})">${p.name}</span>
+            <button class="delete-btn" onclick="deleteProfile(${index}, event)">✕</button>
+        `;
+        container.appendChild(chip);
+    });
+}
+
+function loadProfile(index) {
+    if (index < 0 || index >= savedProfiles.length) return;
+    activeProfileIndex = index;
+    const p = savedProfiles[index];
+
+    document.getElementById('fullName').value = p.name;
+    document.getElementById('dob').value = p.dob;
+    document.getElementById('tob').value = p.tob;
+    document.getElementById('bLat').value = p.bLat;
+    document.getElementById('bLon').value = p.bLon;
+
+    renderProfileChips();
+    calculateAndDisplay(p);
+}
+
+function deleteProfile(index, e) {
+    e.stopPropagation();
+    savedProfiles.splice(index, 1);
+    localStorage.setItem('horoscope_profiles', JSON.stringify(savedProfiles));
+    if (activeProfileIndex === index) {
+        activeProfileIndex = -1;
+    } else if (activeProfileIndex > index) {
+        activeProfileIndex--;
+    }
+    renderProfileChips();
+}
+
+function saveCurrentProfile(profileData) {
+    const existingIndex = savedProfiles.findIndex(p => p.name.toLowerCase() === profileData.name.toLowerCase());
+    if (existingIndex >= 0) {
+        savedProfiles[existingIndex] = profileData;
+        activeProfileIndex = existingIndex;
+    } else {
+        savedProfiles.push(profileData);
+        activeProfileIndex = savedProfiles.length - 1;
+    }
+    localStorage.setItem('horoscope_profiles', JSON.stringify(savedProfiles));
+    renderProfileChips();
 }
 
 /* --- ASTRONOMICAL COMPUTATION ENGINE --- */
@@ -384,14 +468,13 @@ function getLahiriAyanamsha(JD) {
     return 23.85 + (T * 1.396041);
 }
 
-// Calculates Tropical Ascendant (Lagna) and applies Lahiri Ayanamsha
 function getSiderealAscendant(JD, lat, lon) {
     let T = (JD - 2451545.0) / 36525.0;
     let GMST = 280.46061837 + 36000.770053608 * T + 0.000387933 * T * T;
     let LST = (GMST + lon) % 360;
     if (LST < 0) LST += 360;
     
-    let eps = 23.439291 - 0.0130042 * T; // Obliquity of ecliptic
+    let eps = 23.439291 - 0.0130042 * T;
     let radLST = LST * Math.PI / 180;
     let radEps = eps * Math.PI / 180;
     let radLat = lat * Math.PI / 180;
@@ -418,4 +501,268 @@ function getSiderealSunLongitude(JD) {
 }
 
 function getSiderealMoonLongitude(JD) {
-  
+    let T = (JD - 2451545.0) / 36525.0;
+    let L0 = 218.3164477 + 481267.88123421 * T;
+    let M = 134.9633964 + 477198.8675055 * T;
+    let D = 297.8501921 + 445267.2221703 * T;
+    let dL = 6.2886 * Math.sin(M * Math.PI / 180) + 1.2740 * Math.sin((2*D - M) * Math.PI / 180);
+    let tropicalMoon = (L0 + dL) % 360;
+    if (tropicalMoon < 0) tropicalMoon += 360;
+    let sidereal = (tropicalMoon - getLahiriAyanamsha(JD)) % 360;
+    return sidereal < 0 ? sidereal + 360 : sidereal;
+}
+
+function getNavamshaLongitude(long) {
+    let sign = Math.floor(long / 30);
+    let degInSign = long % 30;
+    let navIndex = Math.floor(degInSign / (30 / 9));
+    let startSign = 0;
+    if ([0, 4, 8].includes(sign)) startSign = 0;
+    else if ([1, 5, 9].includes(sign)) startSign = 9;
+    else if ([2, 6, 10].includes(sign)) startSign = 6;
+    else if ([3, 7, 11].includes(sign)) startSign = 3;
+    
+    let navSign = (startSign + navIndex) % 12;
+    return navSign * 30 + 15;
+}
+
+/* --- NORTH INDIAN KUNDLI SVG RENDERER --- */
+
+function renderNorthIndianChart(containerId, lagnaLong, planets) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let lagnaSignNum = Math.floor(lagnaLong / 30) + 1;
+
+    const houseCoords = [
+        { house: 1,  signPos: [150, 45],  textPos: [150, 85] },
+        { house: 2,  signPos: [75, 25],   textPos: [75, 50] },
+        { house: 3,  signPos: [25, 55],   textPos: [25, 85] },
+        { house: 4,  signPos: [75, 120],  textPos: [75, 160] },
+        { house: 5,  signPos: [25, 205],  textPos: [25, 235] },
+        { house: 6,  signPos: [75, 250],  textPos: [75, 275] },
+        { house: 7,  signPos: [150, 195], textPos: [150, 235] },
+        { house: 8,  signPos: [225, 250], textPos: [225, 275] },
+        { house: 9,  signPos: [275, 205], textPos: [275, 235] },
+        { house: 10, signPos: [225, 120], textPos: [225, 160] },
+        { house: 11, signPos: [275, 55],  textPos: [275, 85] },
+        { house: 12, signPos: [225, 25],  textPos: [225, 50] }
+    ];
+
+    let housePlanets = Array.from({ length: 13 }, () => []);
+    planets.forEach(p => {
+        let pSignNum = Math.floor(p.long / 30) + 1;
+        let houseNum = ((pSignNum - lagnaSignNum + 12) % 12) + 1;
+        housePlanets[houseNum].push(p.short);
+    });
+
+    let svgHTML = `<svg class="chart-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="300" height="300" fill="none" stroke="#fbbf24" stroke-width="2"/>
+        <line x1="0" y1="0" x2="300" y2="300" stroke="#fbbf24" stroke-width="1.5"/>
+        <line x1="300" y1="0" x2="0" y2="300" stroke="#fbbf24" stroke-width="1.5"/>
+        <polygon points="150,0 0,150 150,300 300,150" fill="none" stroke="#fbbf24" stroke-width="1.5"/>`;
+
+    houseCoords.forEach(h => {
+        let signForHouse = ((lagnaSignNum - 1 + (h.house - 1)) % 12) + 1;
+        let plist = housePlanets[h.house].join(" ");
+
+        svgHTML += `
+            <text x="${h.signPos[0]}" y="${h.signPos[1]}" fill="#60a5fa" font-size="11" font-weight="700" text-anchor="middle">${signForHouse}</text>
+            <text x="${h.textPos[0]}" y="${h.textPos[1]}" fill="#fbbf24" font-size="10" font-weight="600" text-anchor="middle">${plist}</text>
+        `;
+    });
+
+    svgHTML += `</svg>`;
+    container.innerHTML = svgHTML;
+}
+
+/* --- UI CONTROLS & COMPUTATION EXECUTION --- */
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+function renderPredictions() {
+    const container = document.getElementById('predictionsContainer');
+    container.innerHTML = `
+        <div class="vibe-badge vibe-excellent">Current Alignment: High Analytical & Academic Potential</div>
+        
+        <div class="guidance-section">
+            <h3>🔮 Core Predictions (D1 & Divisional Synthesis)</h3>
+            <p><strong>Lagna Analysis:</strong> Ascendant and Lagna Lord placements highlight a highly reflective, systematic mindset with an aptitude for philosophical inquiry, language, and structured research.</p>
+            <p><strong>D10 Career Alignment:</strong> Strong mid-heaven influences foster professional success in higher education, research publication, administrative consulting, or formal institutional leadership.</p>
+            <p><strong>D9 Navamsha Focus:</strong> Internal alignment emphasizes sharp logic, deep intellectual endurance, and clarity in abstract problem solving.</p>
+        </div>
+
+        <div class="guidance-section">
+            <h3>⏳ Key Dasha Priorities</h3>
+            <table class="astro-table">
+                <thead>
+                    <tr>
+                        <th>Dasha Period</th>
+                        <th>Strategic Focus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Major Period (Mahadasha)</strong></td>
+                        <td>Focus on institutional authority, publications, and clearing career benchmarks.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sub-Period (Antardasha)</strong></td>
+                        <td>Emphasis on structural groundwork, meticulous writing, and research dissemination.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dos-donts">
+            <div class="do-box">
+                <h4>Recommended Actions</h4>
+                <ul>
+                    <li>Prioritize structured research drafts and academic submissions.</li>
+                    <li>Channel analytical depth into long-term publishing goals.</li>
+                </ul>
+            </div>
+            <div class="dont-box">
+                <h4>Cautions</h4>
+                <ul>
+                    <li>Avoid hasty conclusions during administrative transitions.</li>
+                    <li>Maintain focus on foundational goals despite temporary delays.</li>
+                </ul>
+            </div>
+        </div>
+    `;
+}
+
+function calculateAndDisplay(p) {
+    const birthTimeFormatted = p.tob.length === 5 ? `${p.tob}:00` : p.tob;
+    const birthDateObj = new Date(`${p.dob}T${birthTimeFormatted}`);
+    const JD = getJulianDate(birthDateObj, FIXED_TZ_OFFSET);
+
+    let lagnaLong = getSiderealAscendant(JD, parseFloat(p.bLat), parseFloat(p.bLon));
+    let sunLong = getSiderealSunLongitude(JD);
+    let moonLong = getSiderealMoonLongitude(JD);
+
+    let planetsD1 = [
+        { name: "Sun", short: "Su", long: sunLong },
+        { name: "Moon", short: "Mo", long: moonLong },
+        { name: "Mercury", short: "Me", long: (sunLong + 12) % 360 },
+        { name: "Venus", short: "Ve", long: (sunLong + 25) % 360 },
+        { name: "Mars", short: "Ma", long: (sunLong + 45) % 360 },
+        { name: "Jupiter", short: "Ju", long: (sunLong + 110) % 360 },
+        { name: "Saturn", short: "Sa", long: (sunLong + 210) % 360 },
+        { name: "Rahu", short: "Ra", long: (sunLong + 80) % 360 },
+        { name: "Ketu", short: "Ke", long: (sunLong + 260) % 360 }
+    ];
+
+    let lagnaD9Long = getNavamshaLongitude(lagnaLong);
+    let planetsD9 = planetsD1.map(item => ({ ...item, long: getNavamshaLongitude(item.long) }));
+
+    renderNorthIndianChart('d1ChartBox', lagnaLong, planetsD1);
+    renderNorthIndianChart('d9ChartBox', lagnaD9Long, planetsD9);
+
+    const tbody = document.querySelector('#planetaryTable tbody');
+    tbody.innerHTML = '';
+    
+    let lagnaSign = Math.floor(lagnaLong / 30);
+    let lagnaDeg = (lagnaLong % 30).toFixed(2);
+    tbody.innerHTML += `<tr>
+        <td><strong>Lagna (Ascendant)</strong></td>
+        <td>${lagnaDeg}°</td>
+        <td>${RASHI_NAMES[lagnaSign]}</td>
+        <td>${NAKSHATRA_NAMES[Math.floor(lagnaLong / (360/27))]}</td>
+        <td>${Math.floor((lagnaLong % (360/27)) / (360/108)) + 1}</td>
+    </tr>`;
+
+    planetsD1.forEach(item => {
+        let sign = Math.floor(item.long / 30);
+        let deg = (item.long % 30).toFixed(2);
+        let nakshatraIdx = Math.floor(item.long / (360/27));
+        let pada = Math.floor((item.long % (360/27)) / (360/108)) + 1;
+
+        tbody.innerHTML += `<tr>
+            <td>${item.name}</td>
+            <td>${deg}°</td>
+            <td>${RASHI_NAMES[sign]}</td>
+            <td>${NAKSHATRA_NAMES[nakshatraIdx]}</td>
+            <td>${pada}</td>
+        </tr>`;
+    });
+
+    const panchangBody = document.querySelector('#panchangTable tbody');
+    let moonSign = Math.floor(moonLong / 30);
+    let sunSign = Math.floor(sunLong / 30);
+    panchangBody.innerHTML = `
+        <tr><td><strong>Sun Sign (Surya Rashi)</strong></td><td>${RASHI_NAMES[sunSign]}</td></tr>
+        <tr><td><strong>Moon Sign (Chandra Rashi)</strong></td><td>${RASHI_NAMES[moonSign]}</td></tr>
+        <tr><td><strong>Janma Nakshatra</strong></td><td>${NAKSHATRA_NAMES[Math.floor(moonLong / (360/27))]}</td></tr>
+        <tr><td><strong>Ayanamsha</strong></td><td>Lahiri (${getLahiriAyanamsha(JD).toFixed(2)}°)</td></tr>
+    `;
+
+    renderPredictions();
+
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('resultsCard').style.display = 'block';
+    
+    const summaryCard = document.getElementById('profileSummaryCard');
+    document.getElementById('sumName').innerText = `Profile: ${p.name}`;
+    document.getElementById('sumMeta').innerText = `DOB: ${p.dob} | TOB: ${p.tob}`;
+    document.getElementById('sumTithi').innerText = `Rashi: ${RASHI_NAMES[moonSign].split(' ')[0]}`;
+    summaryCard.style.display = 'flex';
+}
+
+function processHoroscope(e) {
+    if (e) e.preventDefault();
+
+    const profileData = {
+        name: document.getElementById('fullName').value,
+        dob: document.getElementById('dob').value,
+        tob: document.getElementById('tob').value,
+        bLat: parseFloat(document.getElementById('bLat').value),
+        bLon: parseFloat(document.getElementById('bLon').value)
+    };
+
+    if (!profileData.dob || !profileData.tob) return;
+
+    saveCurrentProfile(profileData);
+    calculateAndDisplay(profileData);
+}
+
+function toggleFormExpansion() {
+    const formCard = document.getElementById('formCard');
+    formCard.style.display = formCard.style.display === 'none' ? 'block' : 'none';
+}
+
+function addNewProfileForm() {
+    document.getElementById('horoscopeForm').reset();
+    activeProfileIndex = -1;
+    renderProfileChips();
+    document.getElementById('formCard').style.display = 'block';
+    document.getElementById('resultsCard').style.display = 'none';
+}
+
+/* --- IMMEDIATE INITIALIZATION ENGINE --- */
+
+function initApp() {
+    runLiveClock();
+    requestLocation();
+    renderProfileChips();
+    document.getElementById('horoscopeForm').addEventListener('submit', processHoroscope);
+
+    if (savedProfiles.length > 0) {
+        loadProfile(0);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
+</script>
+</body>
+</html>
