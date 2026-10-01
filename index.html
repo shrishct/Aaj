@@ -146,8 +146,8 @@
     </header>
 
     <div class="live-bar">
-        <div><strong>Live Time (IST):</strong> <span id="liveClock">Syncing time...</span></div>
-        <div><strong>Current Location:</strong> <span id="currentLocDisplay">Detecting...</span></div>
+        <div><strong>Live Time:</strong> <span id="liveClock">Initializing...</span></div>
+        <div><strong>Location:</strong> <span id="currentLocDisplay">Detecting...</span></div>
     </div>
 
     <!-- Collapsed Profile Summary -->
@@ -220,7 +220,7 @@
 
             <div class="section-divider"></div>
             <div class="section-title">2. Current Location (Today)</div>
-            <button type="button" class="btn-secondary" id="autoDetectBtn">📍 Refresh Location Online</button>
+            <button type="button" class="btn-secondary" id="autoDetectBtn">📍 Tap to Grant GPS / Refresh Location</button>
 
             <div class="form-group">
                 <label for="currentCitySelect">Select Current City</label>
@@ -324,43 +324,52 @@ const TITHI_NAMES = ["Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami",
 let savedProfiles = JSON.parse(localStorage.getItem('horoscope_profiles') || '[]');
 let activeProfileIndex = -1;
 
-// Ultra-reliable synchronous clock updater
-function updateLiveClock() {
+// Ultra-bulletproof clock function (guaranteed work across mobile browsers)
+function runLiveClock() {
     const clockEl = document.getElementById('liveClock');
     if (!clockEl) return;
-    try {
+    
+    function update() {
         const now = new Date();
-        const istString = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        const dateString = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' });
-        clockEl.innerText = `${istString} | ${dateString}`;
-    } catch(e) {
-        clockEl.innerText = new Date().toLocaleTimeString();
+        const hrs = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        const secs = String(now.getSeconds()).padStart(2, '0');
+        const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+        clockEl.innerText = `${hrs}:${mins}:${secs} | ${dateStr}`;
     }
+    
+    update();
+    setInterval(update, 1000);
 }
 
-// Non-blocking location detection
-function detectLocation() {
+// Geolocation trigger with status reporting
+function requestLocation() {
     const locDisplay = document.getElementById('currentLocDisplay');
     if (!locDisplay) return;
 
-    locDisplay.innerText = "New Delhi / NCR";
-    document.getElementById('cLat').value = 28.61;
-    document.getElementById('cLon').value = 77.20;
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const lat = pos.coords.latitude.toFixed(2);
-                const lon = pos.coords.longitude.toFixed(2);
-                document.getElementById('cLat').value = lat;
-                document.getElementById('cLon').value = lon;
-                document.getElementById('currentCitySelect').value = 'custom';
-                locDisplay.innerText = `GPS (${lat}, ${lon})`;
-            },
-            () => { /* Keeps fallback without blocking UI */ },
-            { timeout: 2000, maximumAge: 60000 }
-        );
+    if (!navigator.geolocation) {
+        locDisplay.innerText = "Delhi/NCR (Fallback)";
+        return;
     }
+
+    locDisplay.innerText = "Requesting GPS...";
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude.toFixed(2);
+            const lon = pos.coords.longitude.toFixed(2);
+            document.getElementById('cLat').value = lat;
+            document.getElementById('cLon').value = lon;
+            document.getElementById('currentCitySelect').value = 'custom';
+            locDisplay.innerText = `GPS Active (${lat}, ${lon})`;
+        },
+        (err) => {
+            locDisplay.innerText = "Delhi/NCR (Default)";
+            document.getElementById('cLat').value = 28.61;
+            document.getElementById('cLon').value = 77.20;
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
 }
 
 function getJulianDate(dateObj, tzOffset) {
@@ -399,4 +408,256 @@ function getSiderealSunLongitude(JD) {
 function calculatePanchang(nowJD) {
     let sunLong = getSiderealSunLongitude(nowJD);
     let moonLong = getSiderealMoonLongitude(nowJD);
-    let diff = (moonLon
+    let diff = (moonLong - sunLong + 360) % 360;
+    let tithiIdx = Math.floor(diff / 12);
+    let paksha = tithiIdx < 15 ? "Shukla Paksha" : "Krishna Paksha";
+    let tithiName = TITHI_NAMES[tithiIdx % 15] + ` (${paksha})`;
+    let nakIdx = Math.floor(moonLong / (360 / 27));
+    let nakName = NAKSHATRA_NAMES[nakIdx];
+    return { tithiName, nakName, sunLong, moonLong };
+}
+
+function renderProfilesChips() {
+    const container = document.getElementById('profileChipsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    savedProfiles.forEach((p, idx) => {
+        const chip = document.createElement('div');
+        chip.className = `profile-chip ${idx === activeProfileIndex ? 'active' : ''}`;
+        chip.innerText = p.name;
+        chip.onclick = () => loadProfile(idx);
+        container.appendChild(chip);
+    });
+}
+
+function loadProfile(idx) {
+    activeProfileIndex = idx;
+    const p = savedProfiles[idx];
+    document.getElementById('fullName').value = p.name;
+    document.getElementById('dob').value = p.dob;
+    document.getElementById('tob').value = p.tob;
+    document.getElementById('bLat').value = p.bLat;
+    document.getElementById('bLon').value = p.bLon;
+    renderProfilesChips();
+    calculateAndShow(p);
+}
+
+function addNewProfileForm() {
+    activeProfileIndex = -1;
+    document.getElementById('fullName').value = '';
+    document.getElementById('dob').value = '';
+    document.getElementById('tob').value = '';
+    document.getElementById('formCard').style.display = 'block';
+    document.getElementById('profileSummaryCard').style.display = 'none';
+    renderProfilesChips();
+}
+
+function toggleFormExpansion() {
+    const fCard = document.getElementById('formCard');
+    if (fCard.style.display === 'none') {
+        fCard.style.display = 'block';
+    } else {
+        fCard.style.display = 'none';
+    }
+}
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+function drawNorthIndianChart(containerId, rashiList) {
+    const box = document.getElementById(containerId);
+    box.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 200 200">
+            <rect x="0" y="0" width="200" height="200" fill="none" stroke="#fbbf24" stroke-width="2"/>
+            <line x1="0" y1="0" x2="200" y2="200" stroke="#fbbf24" stroke-width="1.2"/>
+            <line x1="200" y1="0" x2="0" y2="200" stroke="#fbbf24" stroke-width="1.2"/>
+            <polygon points="100,0 200,100 100,200 0,100" fill="none" stroke="#fbbf24" stroke-width="1.2"/>
+            <text x="100" y="70" text-anchor="middle" fill="#60a5fa" font-size="10">H1 (${rashiList[0]})</text>
+            <text x="50" y="35" text-anchor="middle" fill="#9ca3af" font-size="9">H2 (${rashiList[1]})</text>
+            <text x="25" y="60" text-anchor="middle" fill="#9ca3af" font-size="9">H3 (${rashiList[2]})</text>
+            <text x="60" y="105" text-anchor="middle" fill="#60a5fa" font-size="10">H4 (${rashiList[3]})</text>
+            <text x="25" y="150" text-anchor="middle" fill="#9ca3af" font-size="9">H5 (${rashiList[4]})</text>
+            <text x="50" y="175" text-anchor="middle" fill="#9ca3af" font-size="9">H6 (${rashiList[5]})</text>
+            <text x="100" y="145" text-anchor="middle" fill="#60a5fa" font-size="10">H7 (${rashiList[6]})</text>
+            <text x="150" y="175" text-anchor="middle" fill="#9ca3af" font-size="9">H8 (${rashiList[7]})</text>
+            <text x="175" y="150" text-anchor="middle" fill="#9ca3af" font-size="9">H9 (${rashiList[8]})</text>
+            <text x="140" y="105" text-anchor="middle" fill="#60a5fa" font-size="10">H10 (${rashiList[9]})</text>
+            <text x="175" y="60" text-anchor="middle" fill="#9ca3af" font-size="9">H11 (${rashiList[10]})</text>
+            <text x="150" y="35" text-anchor="middle" fill="#9ca3af" font-size="9">H12 (${rashiList[11]})</text>
+        </svg>
+    `;
+}
+
+const DETAILED_PREDICTIONS = {
+    1: { overall: "High Energy & Personal Focus", vibe: "vibe-excellent", vibeText: "Strong & Favorable", career: "You have natural initiative today. Ideal for pitching new ideas, taking leadership in meetings, and clearing backlog tasks.", love: "Your confidence is attractive today. Express your feelings directly, but stay open to your partner's thoughts.", health: "Physical energy is high. Great day for physical exercise or starting an active routine.", dos: ["Take charge of key projects", "Focus on physical activity", "Express your ideas directly"], donts: ["Don't dominate team discussions", "Don't ignore others' input"] },
+    2: { overall: "Financial & Family Focus", vibe: "vibe-excellent", vibeText: "Financially Productive", career: "A productive day for managing budgets, reviewing terms, or closing ongoing tasks. Steady work yields solid results.", love: "Family discussions take center stage. Warm and supportive conversations strengthen personal bonds.", health: "Pay attention to dietary habits. Stick to light, fresh, home-cooked food.", dos: ["Review finances and budgets", "Have constructive family talks", "Focus on practical goals"], donts: ["Avoid impulse spending", "Don't make hasty financial promises"] },
+    3: { overall: "Communication & High Momentum", vibe: "vibe-excellent", vibeText: "Highly Active", career: "Short-term efforts pay off quickly today. High momentum for writing, emails, presentations, and team coordination.", love: "Playful communication brings joy. Great day for casual outings, texting, and sharing humor.", health: "High stamina and mental agility. Keep your posture relaxed during desk hours.", dos: ["Send crucial communications", "Connect with colleagues", "Take quick action on pending tasks"], donts: ["Don't leave tasks half-done", "Avoid unnecessary debates"] },
+    4: { overall: "Home & Emotional Comfort", vibe: "vibe-moderate", vibeText: "Grounding Day", career: "Best suited for organizing work behind the scenes. Focus on stabilizing existing work rather than starting risky ventures.", love: "Desire for peace and comfort at home. A quiet evening with family will recharge your emotional energy.", health: "Prioritize emotional rest. Take time to relax and unwind after work.", dos: ["Focus on domestic comfort", "Spend quality time with family", "Recharge your mind"], donts: ["Don't bring work friction home", "Avoid emotional overreactions"] },
+    5: { overall: "Creativity & Strategic Growth", vibe: "vibe-excellent", vibeText: "Creative & Favorable", career: "Your mind is sharp and creative. Excellent for problem-solving, planning, or working on creative concepts.", love: "Romance and self-expression are favored. Great day for pleasant dates or lighthearted conversations.", health: "Mental energy is active. Keep your digestion balanced with wholesome meals.", dos: ["Brainstorm creative solutions", "Plan strategic steps ahead", "Enjoy pleasant social moments"], donts: ["Don't overcomplicate simple matters", "Avoid speculative financial gambles"] },
+    6: { overall: "Organization & Problem Solving", vibe: "vibe-excellent", vibeText: "Productive & Efficient", career: "A powerful day for getting things done. You will easily overcome work obstacles, resolve pending issues, and clear clutter.", love: "Practical help speaks louder than words today. Support loved ones with concrete actions.", health: "Focus on immunity and daily routines. Ideal day for starting a balanced diet.", dos: ["Clear pending checklists", "Organize your workspace", "Focus on daily health habits"], donts: ["Don't get stuck in minor fault-finding", "Avoid overworking past energy limits"] },
+    7: { overall: "Partnerships & Relationships", vibe: "vibe-moderate", vibeText: "Relationship Focus", career: "Collaboration is your key asset today. Work closely with partners, meet clients, or coordinate with co-workers.", love: "Relationships take priority. Open, calm dialogue balances mutual expectations and builds trust.", health: "Maintain balance. Ensure adequate hydration and restful sleep.", dos: ["Seek win-win solutions", "Focus on client & partner ties", "Maintain diplomatic balance"], donts: ["Don't insist on having the last word", "Avoid isolated working when teamwork is better"] },
+    8: { overall: "Caution & Quiet Focus (Chandrashtama)", vibe: "vibe-cautious", vibeText: "Handle with Care", career: "Avoid high-risk decisions or tense debates. Stick to routine tasks and double-check important details.", love: "You may feel more sensitive today. Avoid starting heavy emotional discussions; grant yourself peace.", health: "Physical energy may feel lower. Prioritize good sleep, light food, and avoid over-exertion.", dos: ["Stick to routine, quiet work", "Practice patience and calm", "Get extra rest"], donts: ["Do NOT start major financial commitments today", "Avoid signing crucial contracts if possible", "Don't engage in confrontational debates"] },
+    9: { overall: "Wisdom & Good Fortune", vibe: "vibe-excellent", vibeText: "Smooth & Favored", career: "Perspective is on your side. Ideal for long-term planning, consulting seniors, learning, or strategy.", love: "Shared values and thoughtful talks bring closeness. A peaceful vibe surrounds you.", health: "Feeling optimistic and grounded. Great day for outdoor walks or meditation.", dos: ["Seek advice from seniors or mentors", "Focus on long-term goals", "Maintain an optimistic outlook"], donts: ["Don't ignore the big picture for minor details", "Avoid rigid opinions"] },
+    10: { overall: "Career Power & Recognition", vibe: "vibe-excellent", vibeText: "High Achievement", career: "Strong career focus today. Decisions are respected, efforts are recognized, and work output is strong.", love: "Work commitments take time. Keep your partner informed to maintain smooth understanding.", health: "Good vitality, but avoid physical fatigue from long working hours.", dos: ["Take key executive decisions", "Present work to seniors/clients", "Capitalize on professional focus"], donts: ["Don't ignore family completely", "Avoid micromanaging team members"] },
+    11: { overall: "Gains & Goal Achievement", vibe: "vibe-excellent", vibeText: "Rewarding & Positive", career: "Support from colleagues and good results for past efforts. Excellent day to execute group projects.", love: "Socializing brings joy. Hanging out with supportive friends or family brightens your mood.", health: "Upbeat mindset and healthy overall energy.", dos: ["Network with peers", "Execute productive ideas", "Acknowledge progress with team"], donts: ["Don't isolate yourself from support", "Avoid overspending on social outings"] },
+    12: { overall: "Rest & Planning", vibe: "vibe-cautious", vibeText: "Quiet & Reflective", career: "Pace may feel slower. Best spent auditing past work, planning quietly behind the scenes, or organizing.", love: "Prefers quiet connection over loud events. Solitude or deep private talks feel soothing.", health: "Energy levels are lower. Sleep early and give your body adequate rest.", dos: ["Catch up on sleep and rest", "Audit expenses & plan ahead", "Clear mental clutter"], donts: ["Avoid making major impulse commitments", "Don't push past exhaustion limits"] }
+};
+
+function calculateAndShow(profileData) {
+    const birthDate = new Date(`${profileData.dob}T${profileData.tob}`);
+    const birthJD = getJulianDate(birthDate, FIXED_TZ_OFFSET);
+    const now = new Date();
+    const currentJD = getJulianDate(now, FIXED_TZ_OFFSET);
+
+    const birthMoonLong = getSiderealMoonLongitude(birthJD);
+    const currentMoonLong = getSiderealMoonLongitude(currentJD);
+
+    const birthRashiIdx = Math.floor(birthMoonLong / 30);
+    const currentRashiIdx = Math.floor(currentMoonLong / 30);
+
+    const transitHouse = ((currentRashiIdx - birthRashiIdx + 12) % 12) + 1;
+    const pred = DETAILED_PREDICTIONS[transitHouse];
+    const panchang = calculatePanchang(currentJD);
+
+    document.getElementById('sumName').innerText = `Profile: ${profileData.name}`;
+    document.getElementById('sumMeta').innerText = `DOB: ${profileData.dob} | TOB: ${profileData.tob}`;
+    document.getElementById('sumTithi').innerText = `Today: ${panchang.tithiName} • ${panchang.nakName}`;
+    
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('profileSummaryCard').style.display = 'flex';
+    document.getElementById('resultsCard').style.display = 'block';
+
+    document.getElementById('predictionsContainer').innerHTML = `
+        <div style="margin-bottom: 1rem;">
+            <span class="vibe-badge ${pred.vibe}">${pred.vibeText} • ${pred.overall}</span>
+        </div>
+        <div class="guidance-section">
+            <h3>💼 Work & Career Outlook</h3>
+            <p>${pred.career}</p>
+        </div>
+        <div class="guidance-section">
+            <h3>❤ Relationships & Personal Vibe</h3>
+            <p>${pred.love}</p>
+        </div>
+        <div class="guidance-section">
+            <h3>🌿 Health & Vitality</h3>
+            <p>${pred.health}</p>
+        </div>
+        <div class="dos-donts">
+            <div class="do-box">
+                <h4>✓ Recommended Today</h4>
+                <ul>${pred.dos.map(item => `<li>${item}</li>`).join('')}</ul>
+            </div>
+            <div class="dont-box">
+                <h4>✕ Things to Avoid</h4>
+                <ul>${pred.donts.map(item => `<li>${item}</li>`).join('')}</ul>
+            </div>
+        </div>
+    `;
+
+    let rashiHouseList = [];
+    for(let i=0; i<12; i++) {
+        let rIdx = (birthRashiIdx + i) % 12;
+        rashiHouseList.push(RASHI_NAMES[rIdx].split(' ')[0]);
+    }
+    drawNorthIndianChart('d1ChartBox', rashiHouseList);
+
+    let navamshaRashiIdx = Math.floor((birthMoonLong % 30) / (30/9));
+    let navamshaHouseList = [];
+    for(let i=0; i<12; i++) {
+        let rIdx = (navamshaRashiIdx + i) % 12;
+        navamshaHouseList.push(RASHI_NAMES[rIdx].split(' ')[0]);
+    }
+    drawNorthIndianChart('d9ChartBox', navamshaHouseList);
+
+    const pTable = document.querySelector('#planetaryTable tbody');
+    pTable.innerHTML = `
+        <tr>
+            <td>Moon (Chandra)</td>
+            <td>${(birthMoonLong % 30).toFixed(2)}°</td>
+            <td>${RASHI_NAMES[birthRashiIdx]}</td>
+            <td>${NAKSHATRA_NAMES[Math.floor(birthMoonLong / (360/27))]}</td>
+            <td>Pada ${Math.floor(((birthMoonLong % (360/27)) / (360/108))) + 1}</td>
+        </tr>
+        <tr>
+            <td>Sun (Surya) [Today]</td>
+            <td>${(panchang.sunLong % 30).toFixed(2)}°</td>
+            <td>${RASHI_NAMES[Math.floor(panchang.sunLong / 30)]}</td>
+            <td>${NAKSHATRA_NAMES[Math.floor(panchang.sunLong / (360/27))]}</td>
+            <td>Pada ${Math.floor(((panchang.sunLong % (360/27)) / (360/108))) + 1}</td>
+        </tr>
+        <tr>
+            <td>Moon (Transit) [Today]</td>
+            <td>${(currentMoonLong % 30).toFixed(2)}°</td>
+            <td>${RASHI_NAMES[currentRashiIdx]}</td>
+            <td>${panchang.nakName}</td>
+            <td>Pada ${Math.floor(((currentMoonLong % (360/27)) / (360/108))) + 1}</td>
+        </tr>
+    `;
+
+    const panTable = document.querySelector('#panchangTable tbody');
+    panTable.innerHTML = `
+        <tr><td>Current Tithi</td><td>${panchang.tithiName}</td></tr>
+        <tr><td>Current Nakshatra</td><td>${panchang.nakName}</td></tr>
+        <tr><td>Birth Rashi (Moon Sign)</td><td>${RASHI_NAMES[birthRashiIdx]}</td></tr>
+        <tr><td>Today's Transit House</td><td>House ${transitHouse} (${pred.overall})</td></tr>
+    `;
+}
+
+document.getElementById('horoscopeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const pData = {
+        name: document.getElementById('fullName').value,
+        dob: document.getElementById('dob').value,
+        tob: document.getElementById('tob').value,
+        bLat: document.getElementById('bLat').value,
+        bLon: document.getElementById('bLon').value
+    };
+
+    if (activeProfileIndex >= 0) {
+        savedProfiles[activeProfileIndex] = pData;
+    } else {
+        savedProfiles.push(pData);
+        activeProfileIndex = savedProfiles.length - 1;
+    }
+
+    localStorage.setItem('horoscope_profiles', JSON.stringify(savedProfiles));
+    renderProfilesChips();
+    calculateAndShow(pData);
+});
+
+document.getElementById('birthCitySelect').addEventListener('change', (e) => {
+    if (e.target.value !== 'custom') {
+        const [lat, lon] = e.target.value.split(',');
+        document.getElementById('bLat').value = lat;
+        document.getElementById('bLon').value = lon;
+    }
+});
+
+document.getElementById('currentCitySelect').addEventListener('change', (e) => {
+    if (e.target.value !== 'custom') {
+        const [lat, lon] = e.target.value.split(',');
+        document.getElementById('cLat').value = lat;
+        document.getElementById('cLon').value = lon;
+        const cityName = e.target.options[e.target.selectedIndex].text;
+        document.getElementById('currentLocDisplay').innerText = cityName;
+    }
+});
+
+document.getElementById('autoDetectBtn').addEventListener('click', requestLocation);
+
+// Execute immediately on page load
+runLiveClock();
+requestLocation();
+
+if (savedProfiles.length > 0) {
+    renderProfilesChips();
+    loadProfile(0);
+}
+</script>
+</body>
+</html>
