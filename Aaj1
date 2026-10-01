@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalized Daily Horoscope Engine</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 27, 46, 0.85);
+            --accent-gold: #fbbf24;
+            --accent-blue: #60a5fa;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.12);
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: var(--bg-color); color: var(--text-main); min-height: 100vh; padding: 1.5rem 1rem; display: flex; justify-content: center; }
+        .container { max-width: 950px; width: 100%; display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        header { text-align: center; margin-bottom: 0.5rem; }
+        header h1 { font-size: 1.8rem; color: var(--accent-gold); margin-bottom: 0.3rem; }
+        header p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .live-bar {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 0.85rem 1.2rem;
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--accent-blue);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        @media (min-width: 850px) { .grid-layout { grid-template-columns: 380px 1fr; } }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.25rem; }
+        .card h2 { font-size: 1.15rem; color: var(--accent-gold); margin-bottom: 1rem; }
+
+        .section-divider { border-top: 1px solid var(--border-color); margin: 1rem 0; padding-top: 1rem; }
+        .section-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+
+        .form-group { margin-bottom: 0.85rem; }
+        label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+        input, select { width: 100%; padding: 0.65rem 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; color: #fff; font-size: 0.9rem; }
+        input:focus, select:focus { outline: none; border-color: var(--accent-gold); }
+
+        .row { display: flex; gap: 0.5rem; }
+        button { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, var(--accent-gold), #d97706); border: none; border-radius: 0.5rem; color: #000; font-weight: 700; cursor: pointer; font-size: 0.95rem; }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.55rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.85rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .vibe-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .vibe-excellent { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .vibe-moderate { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .vibe-cautious { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+        .guidance-section {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .guidance-section h3 { font-size: 0.95rem; color: var(--accent-gold); margin-bottom: 0.5rem; }
+        .guidance-section p { font-size: 0.9rem; line-height: 1.55; color: #e5e7eb; }
+
+        .dos-donts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+        .do-box { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.85rem; border-radius: 0.5rem; }
+        .dont-box { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.85rem; border-radius: 0.5rem; }
+        .do-box h4 { color: #6ee7b7; font-size: 0.85rem; margin-bottom: 0.4rem; }
+        .dont-box h4 { color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.4rem; }
+        .do-box ul, .dont-box ul { padding-left: 1.2rem; font-size: 0.82rem; color: #d1d5db; line-height: 1.4; }
+
+        .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Personalized Daily Horoscope Engine</h1>
+        <p>Real-time customized predictions mapped to your birth energy</p>
+    </header>
+
+    <!-- Real-time Status Banner -->
+    <div class="live-bar">
+        <div><strong>Live Time (IST):</strong> <span id="liveClock">Syncing time...</span></div>
+        <div><strong>Current Location:</strong> <span id="currentLocDisplay">Detecting...</span></div>
+    </div>
+
+    <div class="grid-layout">
+        <!-- Input Form -->
+        <div class="card">
+            <h2>Your Details</h2>
+            <form id="horoscopeForm">
+                
+                <!-- BIRTH DETAILS -->
+                <div class="section-title">1. Birth Details</div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth</label>
+                    <input type="date" id="dob" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tob">Time of Birth</label>
+                    <input type="time" id="tob" step="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="birthCitySelect">Select Birth City</label>
+                    <select id="birthCitySelect">
+                        <option value="28.61,77.20">New Delhi / NCR</option>
+                        <option value="19.07,72.87">Mumbai</option>
+                        <option value="12.97,77.59">Bengaluru</option>
+                        <option value="26.85,80.94">Lucknow</option>
+                        <option value="25.31,82.97">Varanasi</option>
+                        <option value="22.57,88.36">Kolkata</option>
+                        <option value="13.08,80.27">Chennai</option>
+                        <option value="17.38,78.48">Hyderabad</option>
+                        <option value="18.52,73.85">Pune</option>
+                        <option value="26.91,75.78">Jaipur</option>
+                        <option value="23.02,72.57">Ahmedabad</option>
+                        <option value="custom">Other (Enter Coordinates Below)</option>
+                    </select>
+                </div>
+
+                <div class="row form-group">
+                    <div>
+                        <label for="bLat">Birth Lat</label>
+                        <input type="number" id="bLat" value="28.61" step="any" required>
+                    </div>
+                    <div>
+                        <label for="bLon">Birth Lon</label>
+                        <input type="number" id="bLon" value="77.20" step="any" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Birth Timezone Offset</label>
+                    <input type="text" value="+5.5 (IST Fixed)" disabled style="opacity: 0.7;">
+                </div>
+
+                <!-- CURRENT LOCATION DETAILS -->
+                <div class="section-divider"></div>
+                <div class="section-title">2. Current Location (Today)</div>
+                <button type="button" class="btn-secondary" id="autoDetectBtn">📍 Refresh Time & Location Online</button>
+
+                <div class="form-group">
+                    <label for="currentCitySelect">Select Current City</label>
+                    <select id="currentCitySelect">
+                        <option value="28.61,77.20">New Delhi / NCR</option>
+                        <option value="19.07,72.87">Mumbai</option>
+                        <option value="12.97,77.59">Bengaluru</option>
+                        <option value="26.85,80.94">Lucknow</option>
+                        <option value="25.31,82.97">Varanasi</option>
+                        <option value="22.57,88.36">Kolkata</option>
+                        <option value="13.08,80.27">Chennai</option>
+                        <option value="17.38,78.48">Hyderabad</option>
+                        <option value="18.52,73.85">Pune</option>
+                        <option value="26.91,75.78">Jaipur</option>
+                        <option value="23.02,72.57">Ahmedabad</option>
+                        <option value="custom">Other (Enter Coordinates Below)</option>
+                    </select>
+                </div>
+
+                <div class="row form-group">
+                    <div>
+                        <label for="cLat">Current Lat</label>
+                        <input type="number" id="cLat" value="28.61" step="any" required>
+                    </div>
+                    <div>
+                        <label for="cLon">Current Lon</label>
+                        <input type="number" id="cLon" value="77.20" step="any" required>
+                    </div>
+                </div>
+
+                <button type="submit" style="margin-top: 0.5rem;">Generate Daily Horoscope</button>
+            </form>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="card">
+            <h2>Today's Personal Predictions</h2>
+            <div id="outputContainer">
+                <div class="empty-state">
+                    <p>Enter your birth date and time above to view your detailed daily horoscope.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- STRICT FIXED IST TIMEZONE (+5.5) ---
+const FIXED_TZ_OFFSET = 5.5;
+
+// --- DUAL-MODE TIME ENGINE ---
+let globalTimeOffsetMs = 0; // Difference between network API time and local system time
+
+async function syncOnlineTime() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+        
+        const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error('Network response not ok');
+        const data = await response.json();
+        
+        const networkDate = new Date(data.datetime);
+        const localDate = new Date();
+        globalTimeOffsetMs = networkDate.getTime() - localDate.getTime();
+    } catch (err) {
+        // Fallback: use system clock directly
+        globalTimeOffsetMs = 0;
+    }
+}
+
+function updateLiveClock() {
+    const currentAdjustedTime = new Date(Date.now() + globalTimeOffsetMs);
+    document.getElementById('liveClock').innerText = currentAdjustedTime.toLocaleTimeString('en-IN', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+    }) + " | " + currentAdjustedTime.toLocaleDateString('en-IN');
+}
+
+// --- DUAL-MODE LOCATION ENGINE ---
+async function detectOnlineLocation() {
+    const locDisplay = document.getElementById('currentLocDisplay');
+    locDisplay.innerText = "Detecting...";
+
+    // 1. Try Browser GPS First
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude.toFixed(2);
+                const lon = pos.coords.longitude.toFixed(2);
+                document.getElementById('cLat').value = lat;
+                document.getElementById('cLon').value = lon;
+                document.getElementById('currentCitySelect').value = 'custom';
+                locDisplay.innerText = `GPS Active (${lat}, ${lon})`;
+            },
+            async () => {
+                // 2. Fallback to Online IP Geolocation
+                await fetchIPLocation();
+            },
+            { timeout: 4000, enableHighAccuracy: true }
+        );
+    } else {
+        await fetchIPLocation();
+    }
+}
+
+async function fetchIPLocation() {
+    const locDisplay = document.getElementById('currentLocDisplay');
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        const data = await res.json();
+        if (data.latitude && data.longitude) {
+            document.getElementById('cLat').value = data.latitude;
+            document.getElementById('cLon').value = data.longitude;
+            document.getElementById('currentCitySelect').value = 'custom';
+            locDisplay.innerText = `${data.city || 'Online IP'} (${data.latitude}, ${data.longitude})`;
+            return;
+        }
+    } catch (e) {
+        // 3. Fallback to Default (New Delhi)
+    }
+    document.getElementById('cLat').value = 28.61;
+    document.getElementById('cLon').value = 77.20;
+    document.getElementById('currentCitySelect').value = "28.61,77.20";
+    locDisplay.innerText = "New Delhi (Default)";
+}
+
+// Event Listeners for City Selectors
+document.getElementById('birthCitySelect').addEventListener('change', (e) => {
+    if (e.target.value !== 'custom') {
+        const [lat, lon] = e.target.value.split(',');
+        document.getElementById('bLat').value = lat;
+        document.getElementById('bLon').value = lon;
+    }
+});
+
+document.getElementById('currentCitySelect').addEventListener('change', (e) => {
+    if (e.target.value !== 'custom') {
+        const [lat, lon] = e.target.value.split(',');
+        document.getElementById('cLat').value = lat;
+        document.getElementById('cLon').value = lon;
+        const cityName = e.target.options[e.target.selectedIndex].text;
+        document.getElementById('currentLocDisplay').innerText = cityName;
+    }
+});
+
+document.getElementById('autoDetectBtn').addEventListener('click', async () => {
+    await syncOnlineTime();
+    await detectOnlineLocation();
+});
+
+// --- ASTRO ENGINE CALCULATIONS ---
+function getJulianDate(dateObj, tzOffset) {
+    let Y = dateObj.getUTCFullYear(), M = dateObj.getUTCMonth() + 1;
+    let D = dateObj.getUTCDate() + (dateObj.getUTCHours() - tzOffset + dateObj.getUTCMinutes()/60)/24;
+    if (M <= 2) { Y -= 1; M += 12; }
+    let A = Math.floor(Y / 100), B = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (Y + 4716)) + Math.floor(30.6001 * (M + 1)) + D + B - 1524.5;
+}
+
+function getSiderealMoonLongitude(JD) {
+    let T = (JD - 2451545.0) / 36525.0;
+    let L0 = 218.3164477 + 481267.88123421 * T;
+    let M = 134.9633964 + 477198.8675055 * T;
+    let D = 297.8501921 + 445267.2221703 * T;
+    let dL = 6.2886 * Math.sin(M * Math.PI / 180) + 1.2740 * Math.sin((2*D - M) * Math.PI / 180);
+    let tropicalMoon = (L0 + dL) % 360;
+    if (tropicalMoon < 0) tropicalMoon += 360;
+    let ayanamsha = 23.85 + (T * 1.396041);
+    let sidereal = (tropicalMoon - ayanamsha) % 360;
+    return sidereal < 0 ? sidereal + 360 : sidereal;
+}
+
+const DETAILED_PREDICTIONS = {
+    1: { overall: "High Energy & Personal Focus", vibe: "vibe-excellent", vibeText: "Strong & Favorable", career: "You have natural initiative today. Ideal for pitching new ideas, taking leadership in meetings, and clearing backlog tasks.", love: "Your confidence is attractive today. Express your feelings directly, but stay open to your partner's thoughts.", health: "Physical energy is high. Great day for physical exercise or starting an active routine.", dos: ["Take charge of key projects", "Focus on physical activity", "Express your ideas directly"], donts: ["Don't dominate team discussions", "Don't ignore others' input"] },
+    2: { overall: "Financial & Family Focus", vibe: "vibe-excellent", vibeText: "Financially Productive", career: "A productive day for managing budgets, reviewing terms, or closing ongoing tasks. Steady work yields solid results.", love: "Family discussions take center stage. Warm and supportive conversations strengthen personal bonds.", health: "Pay attention to dietary habits. Stick to light, fresh, home-cooked food.", dos: ["Review finances and budgets", "Have constructive family talks", "Focus on practical goals"], donts: ["Avoid impulse spending", "Don't make hasty financial promises"] },
+    3: { overall: "Communication & High Momentum", vibe: "vibe-excellent", vibeText: "Highly Active", career: "Short-term efforts pay off quickly today. High momentum for writing, emails, presentations, and team coordination.", love: "Playful communication brings joy. Great day for casual outings, texting, and sharing humor.", health: "High stamina and mental agility. Keep your posture relaxed during desk hours.", dos: ["Send crucial communications", "Connect with colleagues", "Take quick action on pending tasks"], donts: ["Don't leave tasks half-done", "Avoid unnecessary debates"] },
+    4: { overall: "Home & Emotional Comfort", vibe: "vibe-moderate", vibeText: "Grounding Day", career: "Best suited for organizing work behind the scenes. Focus on stabilizing existing work rather than starting risky ventures.", love: "Desire for peace and comfort at home. A quiet evening with family will recharge your emotional energy.", health: "Prioritize emotional rest. Take time to relax and unwind after work.", dos: ["Focus on domestic comfort", "Spend quality time with family", "Recharge your mind"], donts: ["Don't bring work friction home", "Avoid emotional overreactions"] },
+    5: { overall: "Creativity & Strategic Growth", vibe: "vibe-excellent", vibeText: "Creative & Favorable", career: "Your mind is sharp and creative. Excellent for problem-solving, planning, or working on creative concepts.", love: "Romance and self-expression are favored. Great day for pleasant dates or lighthearted conversations.", health: "Mental energy is active. Keep your digestion balanced with wholesome meals.", dos: ["Brainstorm creative solutions", "Plan strategic steps ahead", "Enjoy pleasant social moments"], donts: ["Don't overcomplicate simple matters", "Avoid speculative financial gambles"] },
+    6: { overall: "Organization & Problem Solving", vibe: "vibe-excellent", vibeText: "Productive & Efficient", career: "A powerful day for getting things done. You will easily overcome work obstacles, resolve pending issues, and clear clutter.", love: "Practical help speaks louder than words today. Support loved ones with concrete actions.", health: "Focus on immunity and daily routines. Ideal day for starting a balanced diet.", dos: ["Clear pending checklists", "Organize your workspace", "Focus on daily health habits"], donts: ["Don't get stuck in minor fault-finding", "Avoid overworking past energy limits"] },
+    7: { overall: "Partnerships & Relationships", vibe: "vibe-moderate", vibeText: "Relationship Focus", career: "Collaboration is your key asset today. Work closely with partners, meet clients, or coordinate with co-workers.", love: "Relationships take priority. Open, calm dialogue balances mutual expectations and builds trust.", health: "Maintain balance. Ensure adequate hydration and restful sleep.", dos: ["Seek win-win solutions", "Focus on client & partner ties", "Maintain diplomatic balance"], donts: ["Don't insist on having the last word", "Avoid isolated working when teamwork is better"] },
+ 
