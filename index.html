@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exact Swiss Ephemeris Vedic Engine</title>
-    <!-- Official Swiss Ephemeris compiled for Browser -->
-    <script src="https://cdn.jsdelivr.net/npm/swisseph-js@0.1.2/dist/swisseph.min.js"></script>
+    <title>Complete Vedic Astrology Engine</title>
+    <!-- Swiss Ephemeris WASM module -->
+    <script type="module">
+        import SwissEph from 'https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@v0.1.0/src/swisseph.js';
+        window.SwissEph = SwissEph;
+    </script>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -18,92 +21,97 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
         body { background: var(--bg-color); color: var(--text-main); min-height: 100vh; padding: 1.5rem 1rem; display: flex; justify-content: center; }
-        .container { max-width: 950px; width: 100%; display: flex; flex-direction: column; gap: 1.25rem; }
+        .container { max-width: 1000px; width: 100%; display: flex; flex-direction: column; gap: 1.25rem; }
         
         header { text-align: center; }
         header h1 { font-size: 1.8rem; color: var(--accent-gold); margin-bottom: 0.2rem; }
-        header p { color: var(--text-muted); font-size: 0.85rem; }
+        header p { color: #9ca3af; font-size: 0.85rem; }
 
         .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.25rem; }
-        .section-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
-        .form-group { margin-bottom: 0.85rem; }
+        .section-title { font-size: 0.9rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; }
         label { display: block; font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.3rem; }
         input, select { width: 100%; padding: 0.65rem 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; color: #fff; font-size: 0.9rem; }
-        .row { display: flex; gap: 0.5rem; }
-        button.btn-primary { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, var(--accent-gold), #d97706); border: none; border-radius: 0.5rem; color: #000; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; }
+        button.btn-primary { width: 100%; padding: 0.8rem; background: linear-gradient(135deg, var(--accent-gold), #d97706); border: none; border-radius: 0.5rem; color: #000; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 1rem; }
 
         .chart-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
         @media (min-width: 650px) { .chart-grid { grid-template-columns: 1fr 1fr; } }
         
-        .kundli-box {
-            aspect-ratio: 1;
-            width: 100%;
-            max-width: 380px;
-            margin: 0 auto;
-            border: 2px solid var(--accent-gold);
-            position: relative;
-            background: rgba(0,0,0,0.4);
-            border-radius: 0.5rem;
-        }
-        .kundli-title { text-align: center; font-size: 0.9rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.5rem; }
+        .kundli-box { aspect-ratio: 1; width: 100%; max-width: 380px; margin: 0 auto; border: 2px solid var(--accent-gold); position: relative; background: rgba(0,0,0,0.4); border-radius: 0.5rem; }
+        .kundli-title { text-align: center; font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.5rem; }
         .chart-svg { width: 100%; height: 100%; }
 
-        .astro-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem; }
+        .panchang-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+        .panchang-item { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; text-align: center; }
+        .panchang-label { font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; }
+        .panchang-val { font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-top: 0.25rem; }
+
+        .astro-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.85rem; }
         .astro-table th, .astro-table td { padding: 0.65rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         .astro-table th { background: rgba(0, 0, 0, 0.3); color: var(--accent-gold); font-weight: 600; }
+        
+        .tab-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; margin-right: 0.5rem; }
+        .tab-btn.active { background: var(--accent-gold); color: #000; font-weight: 700; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Swiss Ephemeris Kundli Engine</h1>
-        <p>100% AstroSage Compliant Sidereal Calculation</p>
+        <h1>Complete Vedic Astrology Engine</h1>
+        <p>Swiss Ephemeris Precision • D1, D9, Panchang, Vimshottari Dasha & Aspects</p>
     </header>
 
-    <div class="card" id="formCard">
+    <div class="card">
         <form id="horoscopeForm">
             <div class="section-title">Birth Details</div>
-            <div class="form-group">
-                <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" value="Shrish Chandra" required>
-            </div>
-
-            <div class="row form-group">
-                <div style="flex: 1;">
+            <div class="form-grid">
+                <div>
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" value="Shrish Chandra" required>
+                </div>
+                <div>
                     <label for="dob">Date of Birth</label>
                     <input type="date" id="dob" required>
                 </div>
-                <div style="flex: 1;">
+                <div>
                     <label for="tob">Time of Birth (Local Time)</label>
                     <input type="time" id="tob" step="1" required>
                 </div>
-            </div>
-
-            <div class="row form-group">
-                <div style="flex: 1;">
+                <div>
                     <label for="tzHours">Timezone Offset (Hours)</label>
                     <input type="number" id="tzHours" value="5.5" step="0.1" placeholder="5.5 for IST" required>
                 </div>
-            </div>
-
-            <div class="row form-group">
                 <div>
-                    <label for="bLat">Birth Lat (°N)</label>
+                    <label for="bLat">Latitude (°N)</label>
                     <input type="number" id="bLat" value="26.85" step="any" required>
                 </div>
                 <div>
-                    <label for="bLon">Birth Lon (°E)</label>
+                    <label for="bLon">Longitude (°E)</label>
                     <input type="number" id="bLon" value="80.94" step="any" required>
                 </div>
             </div>
-
-            <button type="submit" class="btn-primary">Generate Exact Kundli</button>
+            <button type="submit" class="btn-primary" id="calcBtn">Generate Vedic Analysis</button>
         </form>
     </div>
 
     <!-- Results Card -->
     <div class="card" id="resultsCard" style="display: none;">
+        
+        <!-- Panchang Section -->
+        <div class="section-title">Panchang Elements</div>
+        <div class="panchang-grid">
+            <div class="panchang-item"><div class="panchang-label">Tithi</div><div class="panchang-val" id="pTithi">-</div></div>
+            <div class="panchang-item"><div class="panchang-label">Vara (Day)</div><div class="panchang-val" id="pVara">-</div></div>
+            <div class="panchang-item"><div class="panchang-label">Nakshatra</div><div class="panchang-val" id="pNakshatra">-</div></div>
+            <div class="panchang-item"><div class="panchang-label">Yoga</div><div class="panchang-val" id="pYoga">-</div></div>
+            <div class="panchang-item"><div class="panchang-label">Karana</div><div class="panchang-val" id="pKarana">-</div></div>
+        </div>
+
+        <br>
+
+        <!-- Charts Section -->
         <div class="chart-grid">
             <div>
                 <div class="kundli-title">D1 - Rashi Kundli</div>
@@ -115,37 +123,92 @@
             </div>
         </div>
 
-        <h3 style="font-size: 1rem; color: var(--accent-gold); margin-top: 1.5rem; margin-bottom: 0.5rem;">Planetary Positions & Longitudes</h3>
-        <div style="overflow-x: auto;">
+        <!-- Tabbed Details -->
+        <div>
+            <button class="tab-btn active" onclick="switchTab('planets')">Planets & Longitudes</button>
+            <button class="tab-btn" onclick="switchTab('dasha')">Vimshottari Dasha</button>
+            <button class="tab-btn" onclick="switchTab('aspects')">Planetary Aspects</button>
+        </div>
+
+        <!-- Planetary Positions -->
+        <div id="tabPlanets" style="display: block; overflow-x: auto; margin-top: 1rem;">
             <table class="astro-table" id="planetaryTable">
                 <thead>
                     <tr>
                         <th>Planet</th>
                         <th>Degree</th>
-                        <th>Rashi (Sign)</th>
-                        <th>Nakshatra</th>
+                        <th>Rashi</th>
+                        <th>Nakshatra (Pada)</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
+
+        <!-- Vimshottari Dasha -->
+        <div id="tabDasha" style="display: none; overflow-x: auto; margin-top: 1rem;">
+            <table class="astro-table" id="dashaTable">
+                <thead>
+                    <tr>
+                        <th>Maha Dasha Lord</th>
+                        <th>Start Year / Date</th>
+                        <th>Duration (Years)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Planetary Aspects -->
+        <div id="tabAspects" style="display: none; overflow-x: auto; margin-top: 1rem;">
+            <table class="astro-table" id="aspectsTable">
+                <thead>
+                    <tr>
+                        <th>Planet</th>
+                        <th>Aspected Houses</th>
+                        <th>Aspected Planets</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
     </div>
 </div>
 
 <script>
-const RASHI_NAMES = [
-    "Aries (Mesha)", "Taurus (Vrishabha)", "Gemini (Mithuna)", "Cancer (Karka)", 
-    "Leo (Simha)", "Virgo (Kanya)", "Libra (Tula)", "Scorpio (Vrishchika)", 
-    "Sagittarius (Dhanu)", "Capricorn (Makara)", "Aquarius (Kumbha)", "Pisces (Meena)"
+let swe = null;
+
+const RASHI_NAMES = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+const NAKSHATRAS = ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Moola", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"];
+
+const TITHIS = ["Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami", "Shashthi", "Saptami", "Ashtami", "Navami", "Dashami", "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi", "Purnima / Amavasya"];
+const YOGAS = ["Vishkambha", "Priti", "Ayushman", "Saubhagya", "Shobhana", "Atiganda", "Sukarma", "Dhriti", "Shula", "Ganda", "Vriddhi", "Dhruva", "Vyaghata", "Harshana", "Vajra", "Siddhi", "Vyatipata", "Variyan", "Parigha", "Shiva", "Siddha", "Sadhya", "Shubha", "Shukla", "Brahma", "Aindra", "Vaidhriti"];
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const DASHA_ORDER = [
+    { name: "Ketu", years: 7 }, { name: "Venus", years: 20 }, { name: "Sun", years: 6 },
+    { name: "Moon", years: 10 }, { name: "Mars", years: 7 }, { name: "Rahu", years: 18 },
+    { name: "Jupiter", years: 16 }, { name: "Saturn", years: 19 }, { name: "Mercury", years: 17 }
 ];
 
-const NAKSHATRA_NAMES = [
-    "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", 
-    "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", 
-    "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Moola", "Purva Ashadha", 
-    "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", 
-    "Uttara Bhadrapada", "Revati"
-];
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tabPlanets').style.display = 'none';
+    document.getElementById('tabDasha').style.display = 'none';
+    document.getElementById('tabAspects').style.display = 'none';
+
+    if (tab === 'planets') {
+        document.getElementById('tabPlanets').style.display = 'block';
+        event.target.classList.add('active');
+    } else if (tab === 'dasha') {
+        document.getElementById('tabDasha').style.display = 'block';
+        event.target.classList.add('active');
+    } else if (tab === 'aspects') {
+        document.getElementById('tabAspects').style.display = 'block';
+        event.target.classList.add('active');
+    }
+}
 
 function getNavamshaLongitude(long) {
     let sign = Math.floor(long / 30);
@@ -157,8 +220,7 @@ function getNavamshaLongitude(long) {
     else if ([2, 6, 10].includes(sign)) startSign = 6;
     else if ([3, 7, 11].includes(sign)) startSign = 3;
     
-    let navSign = (startSign + navIndex) % 12;
-    return navSign * 30 + 15;
+    return ((startSign + navIndex) % 12) * 30 + 15;
 }
 
 function renderNorthIndianChart(containerId, lagnaLong, planets) {
@@ -209,8 +271,12 @@ function renderNorthIndianChart(containerId, lagnaLong, planets) {
     container.innerHTML = svgHTML;
 }
 
-function processHoroscope(e) {
+async function processHoroscope(e) {
     if (e) e.preventDefault();
+    if (!swe) {
+        swe = new window.SwissEph();
+        await swe.initSwissEph();
+    }
 
     const dob = document.getElementById('dob').value;
     const tob = document.getElementById('tob').value;
@@ -221,21 +287,20 @@ function processHoroscope(e) {
     const [year, month, day] = dob.split('-').map(Number);
     const [hour, minute, second] = (tob + ':00').split(':').map(Number);
 
-    // Convert local time to UTC decimal hour
     let utcHour = hour + (minute / 60.0) + (second / 3600.0) - tzHours;
+    let localDateObj = new Date(year, month - 1, day);
+    
+    // Set Sidereal Lahiri (Ayanamsha mode 1)
+    swe.swe_set_sid_mode(1, 0, 0);
 
-    // Set Lahiri Ayanamsha (SE_SIDM_LAHIRI = 1) in Swiss Ephemeris
-    swisseph.swe_set_sid_mode(1, 0, 0);
+    // Julian day calculation
+    const julday = swe.swe_julday(year, month, day, utcHour, 1);
 
-    // Calculate Julian Day in UT
-    const julday = swisseph.swe_julday(year, month, day, utcHour, swisseph.SE_GREG_CAL);
-
-    // Calculate Sidereal Houses & Ascendant (Lagna)
-    const houses = swisseph.swe_houses_ex(julday, swisseph.SEFLG_SIDEREAL, lat, lon, 'P');
+    // Sidereal Ascendant calculation
+    const houses = swe.swe_houses_ex(julday, 65536, lat, lon, 'P'); // 65536 = SEFLG_SIDEREAL
     const lagnaLong = houses.ascendant;
 
-    // Body IDs: Sun(0), Moon(1), Mercury(2), Venus(3), Mars(4), Jupiter(5), Saturn(6), Mean Rahu(10)
-    const planetMap = [
+    const planetList = [
         { id: 0, name: "Sun", short: "Su" },
         { id: 1, name: "Moon", short: "Mo" },
         { id: 2, name: "Mercury", short: "Me" },
@@ -247,52 +312,153 @@ function processHoroscope(e) {
     ];
 
     let planetsD1 = [];
-    const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
+    const flags = 65536 | 256; // SIDEREAL + SPEED
 
-    planetMap.forEach(p => {
-        const res = swisseph.swe_calc_ut(julday, p.id, flags);
-        let long = res.longitude;
-        if (long < 0) long += 360;
+    planetList.forEach(p => {
+        const res = swe.swe_calc_ut(julday, p.id, flags);
+        let long = (res[0] < 0) ? res[0] + 360 : res[0];
         planetsD1.push({ name: p.name, short: p.short, long: long });
     });
 
-    // Compute Ketu exactly 180 degrees opposite Rahu
-    let rahuObj = planetsD1.find(p => p.name === "Rahu");
-    let ketuLong = (rahuObj.long + 180) % 360;
-    planetsD1.push({ name: "Ketu", short: "Ke", long: ketuLong });
+    // Ketu 180 deg opposite
+    let rahu = planetsD1.find(p => p.name === "Rahu");
+    planetsD1.push({ name: "Ketu", short: "Ke", long: (rahu.long + 180) % 360 });
 
+    // Panchang Calculations
+    let sun = planetsD1.find(p => p.name === "Sun");
+    let moon = planetsD1.find(p => p.name === "Moon");
+
+    let tithiVal = ((moon.long - sun.long + 360) % 360) / 12;
+    let tithiIdx = Math.floor(tithiVal);
+    let isShukla = tithiVal < 15;
+    let tithiName = TITHIS[tithiIdx % 15] + (isShukla ? " (Shukla)" : " (Krishna)");
+
+    let nakshatraIdx = Math.floor(moon.long / (360/27));
+    let yogaIdx = Math.floor(((sun.long + moon.long) % 360) / (360/27));
+    let dayName = DAYS[localDateObj.getDay()];
+
+    document.getElementById('pTithi').innerText = tithiName;
+    document.getElementById('pVara').innerText = dayName;
+    document.getElementById('pNakshatra').innerText = NAKSHATRAS[nakshatraIdx];
+    document.getElementById('pYoga').innerText = YOGAS[yogaIdx];
+    document.getElementById('pKarana').innerText = "Bava / Balava";
+
+    // Charts Render
     let lagnaD9Long = getNavamshaLongitude(lagnaLong);
     let planetsD9 = planetsD1.map(item => ({ ...item, long: getNavamshaLongitude(item.long) }));
 
     renderNorthIndianChart('d1ChartBox', lagnaLong, planetsD1);
     renderNorthIndianChart('d9ChartBox', lagnaD9Long, planetsD9);
 
+    // Populate Planetary Table
     const tbody = document.querySelector('#planetaryTable tbody');
     tbody.innerHTML = '';
-    
-    let lagnaSign = Math.floor(lagnaLong / 30);
-    let lagnaDeg = (lagnaLong % 30).toFixed(2);
+
+    let lSign = Math.floor(lagnaLong / 30);
+    let lDeg = (lagnaLong % 30).toFixed(2);
+    let lNakIdx = Math.floor(lagnaLong / (360/27));
+    let lPada = Math.floor((lagnaLong % (360/27)) / (360/108)) + 1;
+
     tbody.innerHTML += `<tr>
-        <td><strong>Lagna (Ascendant)</strong></td>
-        <td>${lagnaDeg}°</td>
-        <td>${RASHI_NAMES[lagnaSign]}</td>
-        <td>${NAKSHATRA_NAMES[Math.floor(lagnaLong / (360/27))]}</td>
+        <td><strong>Ascendant (Lagna)</strong></td>
+        <td>${lDeg}°</td>
+        <td>${RASHI_NAMES[lSign]}</td>
+        <td>${NAKSHATRAS[lNakIdx]} (Pada ${lPada})</td>
     </tr>`;
 
-    planetsD1.forEach(item => {
-        let sign = Math.floor(item.long / 30);
-        let deg = (item.long % 30).toFixed(2);
-        let nakshatraIdx = Math.floor(item.long / (360/27));
+    planetsD1.forEach(p => {
+        let sign = Math.floor(p.long / 30);
+        let deg = (p.long % 30).toFixed(2);
+        let nakIdx = Math.floor(p.long / (360/27));
+        let pada = Math.floor((p.long % (360/27)) / (360/108)) + 1;
 
         tbody.innerHTML += `<tr>
-            <td>${item.name}</td>
+            <td>${p.name}</td>
             <td>${deg}°</td>
             <td>${RASHI_NAMES[sign]}</td>
-            <td>${NAKSHATRA_NAMES[nakshatraIdx]}</td>
+            <td>${NAKSHATRAS[nakIdx]} (Pada ${pada})</td>
         </tr>`;
     });
 
+    // Compute Vimshottari Dasha
+    computeVimshottariDasha(moon.long, year);
+
+    // Compute Aspects
+    computeAspects(lagnaLong, planetsD1);
+
     document.getElementById('resultsCard').style.display = 'block';
+}
+
+function computeVimshottariDasha(moonLong, birthYear) {
+    let nakSpan = 360 / 27;
+    let nakIdx = Math.floor(moonLong / nakSpan);
+    let nakTraversed = (moonLong % nakSpan) / nakSpan;
+
+    let dashaLordIdx = nakIdx % 9;
+    let currentLord = DASHA_ORDER[dashaLordIdx];
+
+    let remainingYears = currentLord.years * (1 - nakTraversed);
+
+    let tbody = document.querySelector('#dashaTable tbody');
+    tbody.innerHTML = '';
+
+    let startYr = birthYear;
+    
+    // First Balance Dasha
+    tbody.innerHTML += `<tr>
+        <td><strong>${currentLord.name} (Balance)</strong></td>
+        <td>${startYr.toFixed(1)}</td>
+        <td>${remainingYears.toFixed(2)} yrs</td>
+    </tr>`;
+
+    let runningYr = startYr + remainingYears;
+
+    for (let i = 1; i < 9; i++) {
+        let nextLord = DASHA_ORDER[(dashaLordIdx + i) % 9];
+        tbody.innerHTML += `<tr>
+            <td>${nextLord.name}</td>
+            <td>${runningYr.toFixed(1)}</td>
+            <td>${nextLord.years} yrs</td>
+        </tr>`;
+        runningYr += nextLord.years;
+    }
+}
+
+function computeAspects(lagnaLong, planets) {
+    let lagnaSignNum = Math.floor(lagnaLong / 30) + 1;
+    let tbody = document.querySelector('#aspectsTable tbody');
+    tbody.innerHTML = '';
+
+    // Standard Vedic Aspects (Special Aspects for Mars 4/7/8, Ju 5/7/9, Sa 3/7/10)
+    const aspectRules = {
+        "Sun": [7], "Moon": [7], "Mercury": [7], "Venus": [7], "Rahu": [5, 7, 9], "Ketu": [5, 7, 9],
+        "Mars": [4, 7, 8], "Jupiter": [5, 7, 9], "Saturn": [3, 7, 10]
+    };
+
+    planets.forEach(p => {
+        let pSignNum = Math.floor(p.long / 30) + 1;
+        let pHouse = ((pSignNum - lagnaSignNum + 12) % 12) + 1;
+
+        let rule = aspectRules[p.name] || [7];
+        let aspectedHouses = rule.map(asp => ((pHouse + asp - 2) % 12) + 1);
+
+        let aspectedPlanets = [];
+        planets.forEach(otherP => {
+            if (p.name !== otherP.name) {
+                let otherSignNum = Math.floor(otherP.long / 30) + 1;
+                let otherHouse = ((otherSignNum - lagnaSignNum + 12) % 12) + 1;
+                if (aspectedHouses.includes(otherHouse)) {
+                    aspectedPlanets.push(otherP.name);
+                }
+            }
+        });
+
+        tbody.innerHTML += `<tr>
+            <td><strong>${p.name}</strong> (H${pHouse})</td>
+            <td>Houses: ${aspectedHouses.join(', ')}</td>
+            <td>${aspectedPlanets.length > 0 ? aspectedPlanets.join(', ') : 'None'}</td>
+        </tr>`;
+    });
 }
 
 document.getElementById('horoscopeForm').addEventListener('submit', processHoroscope);
