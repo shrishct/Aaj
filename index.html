@@ -4,356 +4,680 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personalized Daily Horoscope Engine</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        },
+                        cosmic: {
+                            900: '#0b0f19',
+                            800: '#111827',
+                            700: '#161b2e',
+                            600: '#1f293d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(22, 27, 46, 0.85);
-            --accent-gold: #fbbf24;
-            --accent-blue: #60a5fa;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border-color: rgba(255, 255, 255, 0.12);
-            --danger-color: #ef4444;
-            --success-color: #10b981;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg-color); color: var(--text-main); min-height: 100vh; padding: 1.5rem 1rem; display: flex; justify-content: center; }
-        .container { max-width: 950px; width: 100%; display: flex; flex-direction: column; gap: 1.5rem; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
-        header { text-align: center; margin-bottom: 0.5rem; }
-        header h1 { font-size: 1.8rem; color: var(--accent-gold); margin-bottom: 0.3rem; }
-        header p { color: var(--text-muted); font-size: 0.9rem; }
-
-        .live-bar {
-            background: rgba(96, 165, 250, 0.1);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            padding: 0.85rem 1.2rem;
-            border-radius: 0.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--accent-blue);
-            flex-wrap: wrap;
-            gap: 0.5rem;
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            margin: 0;
+            padding: 0;
         }
 
-        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-        @media (min-width: 850px) { .grid-layout { grid-template-columns: 380px 1fr; } }
-
-        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.25rem; }
-        .card h2 { font-size: 1.15rem; color: var(--accent-gold); margin-bottom: 1rem; }
-
-        .section-divider { border-top: 1px solid var(--border-color); margin: 1rem 0; padding-top: 1rem; }
-        .section-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
-
-        .form-group { margin-bottom: 0.85rem; }
-        label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
-        input, select { width: 100%; padding: 0.65rem 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; color: #fff; font-size: 0.9rem; }
-        input:focus, select:focus { outline: none; border-color: var(--accent-gold); }
-
-        .row { display: flex; gap: 0.5rem; }
-        button { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, var(--accent-gold), #d97706); border: none; border-radius: 0.5rem; color: #000; font-weight: 700; cursor: pointer; font-size: 0.95rem; }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 0.55rem;
-            font-size: 0.8rem;
-            margin-bottom: 0.85rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
         }
 
-        .vibe-badge {
-            display: inline-block;
-            padding: 0.4rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
+        /* Input highlight glow */
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.4);
+            border-color: #fbbf24 !important;
         }
-        .vibe-excellent { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
-        .vibe-moderate { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
-        .vibe-cautious { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
 
-        .guidance-section {
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .guidance-section h3 { font-size: 0.95rem; color: var(--accent-gold); margin-bottom: 0.5rem; }
-        .guidance-section p { font-size: 0.9rem; line-height: 1.55; color: #e5e7eb; }
 
-        .dos-donts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
-        .do-box { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.85rem; border-radius: 0.5rem; }
-        .dont-box { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.85rem; border-radius: 0.5rem; }
-        .do-box h4 { color: #6ee7b7; font-size: 0.85rem; margin-bottom: 0.4rem; }
-        .dont-box h4 { color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.4rem; }
-        .do-box ul, .dont-box ul { padding-left: 1.2rem; font-size: 0.82rem; color: #d1d5db; line-height: 1.4; }
-
-        .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen bg-cosmic-900 text-gray-100 p-3 sm:p-6 flex justify-center items-start">
 
-<div class="container">
-    <header>
-        <h1>Personalized Daily Horoscope Engine</h1>
-        <p>Real-time customized predictions mapped to your birth energy</p>
+<div class="max-w-4xl w-full flex flex-col gap-5 my-2">
+    
+    <!-- App Header -->
+    <header class="text-center space-y-1.5 py-2">
+        <div class="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-gold-400/10 border border-gold-400/20 text-gold-400 text-xs font-semibold tracking-wide uppercase">
+            <span>✨ Real-Time Transit Astronomy</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gold-400 tracking-tight">
+            Personalized Daily Horoscope Engine
+        </h1>
+        <p class="text-xs sm:text-sm text-gray-400 max-w-lg mx-auto">
+            Real-time customized predictions mapped precisely to your birth energy and current transit planetary houses.
+        </p>
     </header>
 
-    <!-- Real-time Status Banner -->
-    <div class="live-bar">
-        <div><strong>Live Time (IST):</strong> <span id="liveClock">Syncing time...</span></div>
-        <div><strong>Current Location:</strong> <span id="currentLocDisplay">Detecting...</span></div>
+    <!-- Live Status Banner (Ultra-Reliable Instant Hydration) -->
+    <div class="bg-blue-950/40 border border-blue-500/30 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs sm:text-sm text-blue-300 shadow-lg backdrop-blur-sm">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="font-semibold text-gray-300">Live Time (IST):</span>
+            <span id="liveClock" class="font-mono font-bold text-emerald-400 tracking-wide">Initializing clock...</span>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <span class="text-gray-400">📍</span>
+            <span class="font-semibold text-gray-300">Current Location:</span>
+            <span id="currentLocDisplay" class="font-medium text-blue-300 truncate">Detecting location...</span>
+        </div>
     </div>
 
-    <div class="grid-layout">
-        <!-- Input Form -->
-        <div class="card">
-            <h2>Your Details</h2>
-            <form id="horoscopeForm">
-                
-                <!-- BIRTH DETAILS -->
-                <div class="section-title">1. Birth Details</div>
-                <div class="form-group">
-                    <label for="dob">Date of Birth</label>
-                    <input type="date" id="dob" required>
+    <!-- Main Interactive Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Left Side: Form Controls (5 Cols) -->
+        <div class="lg:col-span-5 bg-cosmic-700/80 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-md flex flex-col justify-between">
+            <form id="horoscopeForm" class="space-y-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gold-400 flex items-center gap-2">
+                        <span>👤</span> Your Details
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Enter exact birth parameters for accuracy.</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="tob">Time of Birth</label>
-                    <input type="time" id="tob" step="1" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="birthCitySelect">Select Birth City</label>
-                    <select id="birthCitySelect">
-                        <option value="28.61,77.20">New Delhi / NCR</option>
-                        <option value="19.07,72.87">Mumbai</option>
-                        <option value="12.97,77.59">Bengaluru</option>
-                        <option value="26.85,80.94">Lucknow</option>
-                        <option value="25.31,82.97">Varanasi</option>
-                        <option value="22.57,88.36">Kolkata</option>
-                        <option value="13.08,80.27">Chennai</option>
-                        <option value="17.38,78.48">Hyderabad</option>
-                        <option value="18.52,73.85">Pune</option>
-                        <option value="26.91,75.78">Jaipur</option>
-                        <option value="23.02,72.57">Ahmedabad</option>
-                        <option value="custom">Other (Enter Coordinates Below)</option>
-                    </select>
-                </div>
-
-                <div class="row form-group">
+                <!-- Section 1: Birth Details -->
+                <div class="space-y-3 pt-2 border-t border-gray-800">
+                    <div class="text-xs font-bold uppercase tracking-wider text-blue-400">1. Birth Details</div>
+                    
                     <div>
-                        <label for="bLat">Birth Lat</label>
-                        <input type="number" id="bLat" value="28.61" step="any" required>
+                        <label for="dob" class="block text-xs font-medium text-gray-300 mb-1">Date of Birth</label>
+                        <input type="date" id="dob" required class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-400">
                     </div>
+
                     <div>
-                        <label for="bLon">Birth Lon</label>
-                        <input type="number" id="bLon" value="77.20" step="any" required>
+                        <label for="tob" class="block text-xs font-medium text-gray-300 mb-1">Time of Birth (Exact)</label>
+                        <input type="time" id="tob" step="1" required class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-400">
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label>Birth Timezone Offset</label>
-                    <input type="text" value="+5.5 (IST Fixed)" disabled style="opacity: 0.7;">
-                </div>
-
-                <!-- CURRENT LOCATION DETAILS -->
-                <div class="section-divider"></div>
-                <div class="section-title">2. Current Location (Today)</div>
-                <button type="button" class="btn-secondary" id="autoDetectBtn">📍 Refresh Time & Location Online</button>
-
-                <div class="form-group">
-                    <label for="currentCitySelect">Select Current City</label>
-                    <select id="currentCitySelect">
-                        <option value="28.61,77.20">New Delhi / NCR</option>
-                        <option value="19.07,72.87">Mumbai</option>
-                        <option value="12.97,77.59">Bengaluru</option>
-                        <option value="26.85,80.94">Lucknow</option>
-                        <option value="25.31,82.97">Varanasi</option>
-                        <option value="22.57,88.36">Kolkata</option>
-                        <option value="13.08,80.27">Chennai</option>
-                        <option value="17.38,78.48">Hyderabad</option>
-                        <option value="18.52,73.85">Pune</option>
-                        <option value="26.91,75.78">Jaipur</option>
-                        <option value="23.02,72.57">Ahmedabad</option>
-                        <option value="custom">Other (Enter Coordinates Below)</option>
-                    </select>
-                </div>
-
-                <div class="row form-group">
                     <div>
-                        <label for="cLat">Current Lat</label>
-                        <input type="number" id="cLat" value="28.61" step="any" required>
+                        <label for="birthCitySelect" class="block text-xs font-medium text-gray-300 mb-1">Select Birth City</label>
+                        <select id="birthCitySelect" class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-400">
+                            <option value="28.61,77.20">New Delhi / NCR</option>
+                            <option value="19.07,72.87">Mumbai</option>
+                            <option value="12.97,77.59">Bengaluru</option>
+                            <option value="26.85,80.94">Lucknow</option>
+                            <option value="25.31,82.97">Varanasi</option>
+                            <option value="22.57,88.36">Kolkata</option>
+                            <option value="13.08,80.27">Chennai</option>
+                            <option value="17.38,78.48">Hyderabad</option>
+                            <option value="18.52,73.85">Pune</option>
+                            <option value="26.91,75.78">Jaipur</option>
+                            <option value="23.02,72.57">Ahmedabad</option>
+                            <option value="custom">Other (Custom Coordinates)</option>
+                        </select>
                     </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="bLat" class="block text-xs font-medium text-gray-400 mb-1">Birth Lat</label>
+                            <input type="number" id="bLat" value="28.61" step="any" required class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        </div>
+                        <div>
+                            <label for="bLon" class="block text-xs font-medium text-gray-400 mb-1">Birth Lon</label>
+                            <input type="number" id="bLon" value="77.20" step="any" required class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        </div>
+                    </div>
+
                     <div>
-                        <label for="cLon">Current Lon</label>
-                        <input type="number" id="cLon" value="77.20" step="any" required>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Birth Timezone Offset</label>
+                        <input type="text" value="+5.5 (IST Fixed)" disabled class="w-full bg-cosmic-900/40 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-500 cursor-not-allowed">
                     </div>
                 </div>
 
-                <button type="submit" style="margin-top: 0.5rem;">Generate Daily Horoscope</button>
+                <!-- Section 2: Current Location -->
+                <div class="space-y-3 pt-3 border-t border-gray-800">
+                    <div class="flex items-center justify-between">
+                        <div class="text-xs font-bold uppercase tracking-wider text-blue-400">2. Current Location (Today)</div>
+                    </div>
+
+                    <button type="button" id="autoDetectBtn" class="w-full py-2 px-3 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 rounded-lg text-blue-300 text-xs font-medium transition-all flex items-center justify-center gap-1.5 active:scale-[0.99]">
+                        <span>📍</span> Refresh Time & Location Online
+                    </button>
+
+                    <div>
+                        <label for="currentCitySelect" class="block text-xs font-medium text-gray-300 mb-1">Select Current City</label>
+                        <select id="currentCitySelect" class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-400">
+                            <option value="28.61,77.20">New Delhi / NCR</option>
+                            <option value="19.07,72.87">Mumbai</option>
+                            <option value="12.97,77.59">Bengaluru</option>
+                            <option value="26.85,80.94">Lucknow</option>
+                            <option value="25.31,82.97">Varanasi</option>
+                            <option value="22.57,88.36">Kolkata</option>
+                            <option value="13.08,80.27">Chennai</option>
+                            <option value="17.38,78.48">Hyderabad</option>
+                            <option value="18.52,73.85">Pune</option>
+                            <option value="26.91,75.78">Jaipur</option>
+                            <option value="23.02,72.57">Ahmedabad</option>
+                            <option value="custom">Other (Custom Coordinates)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="cLat" class="block text-xs font-medium text-gray-400 mb-1">Current Lat</label>
+                            <input type="number" id="cLat" value="28.61" step="any" required class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        </div>
+                        <div>
+                            <label for="cLon" class="block text-xs font-medium text-gray-400 mb-1">Current Lon</label>
+                            <input type="number" id="cLon" value="77.20" step="any" required class="w-full bg-cosmic-900/90 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-gold-400 to-gold-600 hover:from-gold-500 hover:to-gold-600 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-gold-500/10 hover:shadow-gold-500/20 transition-all transform active:scale-[0.98] mt-2">
+                    Generate Daily Horoscope
+                </button>
             </form>
         </div>
 
-        <!-- Output Panel -->
-        <div class="card">
-            <h2>Today's Personal Predictions</h2>
-            <div id="outputContainer">
-                <div class="empty-state">
-                    <p>Enter your birth date and time above to view your detailed daily horoscope.</p>
+        <!-- Right Side: Horoscope Output Display (7 Cols) -->
+        <div class="lg:col-span-7 bg-cosmic-700/80 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-md flex flex-col">
+            <h2 class="text-lg font-bold text-gold-400 flex items-center gap-2 mb-3">
+                <span>🔮</span> Today's Personal Predictions
+            </h2>
+
+            <div id="outputContainer" class="flex-1 flex flex-col justify-center">
+                <div class="text-center py-12 px-4 space-y-3 my-auto">
+                    <div class="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto text-2xl text-gold-400">
+                        ✨
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-200">Awaiting Your Birth Energy</h3>
+                    <p class="text-xs text-gray-400 max-w-sm mx-auto">
+                        Fill in your birth date and time on the left and click <strong class="text-gold-400">Generate Daily Horoscope</strong> to unlock your real-time planetary transits.
+                    </p>
                 </div>
             </div>
         </div>
+
     </div>
+
 </div>
 
 <script>
-// --- STRICT FIXED IST TIMEZONE (+5.5) ---
-const FIXED_TZ_OFFSET = 5.5;
+/**
+ * Personal Daily Horoscope Engine - Ultra Reliable Core JS
+ */
 
-// --- DUAL-MODE TIME ENGINE ---
-let globalTimeOffsetMs = 0; // Difference between network API time and local system time
+const IST_OFFSET_HOURS = 5.5;
 
-async function syncOnlineTime() {
+// Comprehensive dictionary for 12 Chandra-Rashi transit house predictions
+const ASTRO_PREDICTIONS = {
+    1: {
+        title: "High Energy & Personal Focus",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "🌟 Excellent Energy",
+        career: "You possess remarkable focus and direct initiative today. Ideal for pitching new ideas, driving strategic meetings, and tackling long-pending tasks with high confidence.",
+        love: "Your natural charisma is highlighted. Be open, direct, and authentic in communication. Express your feelings clearly while remaining attentive to your partner's input.",
+        health: "Physical vitality and stamina are at peak levels. Great day for active workouts, outdoor movement, or starting a health routine.",
+        dos: ["Take charge of key projects", "Prioritize physical exercise", "Express direct ideas clearly"],
+        donts: ["Don't dominate team conversations", "Avoid dismissing constructive feedback"]
+    },
+    2: {
+        title: "Financial & Family Focus",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "💰 Financially Productive",
+        career: "A steady, productive day for organizing resources, balancing budgets, or finalizing terms. Methodical work yields tangible gains.",
+        love: "Family discussions bring warmth and mutual support. A great evening for home-cooked meals and bonding with close loved ones.",
+        health: "Pay attention to dietary habits. Stick to fresh, nourishing meals and stay well-hydrated throughout the day.",
+        dos: ["Review budgets and expenses", "Engage in warm family talks", "Focus on practical work targets"],
+        donts: ["Avoid emotional impulse buys", "Don't make hasty financial promises"]
+    },
+    3: {
+        title: "High Momentum & Communication",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "🚀 High Momentum",
+        career: "Short-term initiatives move fast today. Communication, writing, emails, presentations, and rapid team execution are heavily favored.",
+        love: "Playful interactions and lighthearted banter bring joy. Ideal for casual catch-ups, short trips, or sharing humor.",
+        health: "High mental agility. Ensure you take brief desk breaks to keep your neck and back relaxed.",
+        dos: ["Dispatch important communications", "Connect with peers & siblings", "Execute quick tasks"],
+        donts: ["Don't leave tasks half-finished", "Avoid engaging in pointless arguments"]
+    },
+    4: {
+        title: "Home & Emotional Grounding",
+        vibeClass: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+        vibeBadge: "🏠 Grounding & Restorative",
+        career: "Best suited for working behind the scenes or consolidating ongoing projects. Focus on stabilizing current systems before launching new ones.",
+        love: "A deep desire for domestic peace and comfort. Spending quiet time at home helps recharge your emotional reserves.",
+        health: "Prioritize emotional rest and relaxation. Unwind early in the evening to clear mental tension.",
+        dos: ["Focus on domestic organization", "Spend restful time with family", "Recharge your mind"],
+        donts: ["Don't bring work friction home", "Avoid unnecessary emotional overreactions"]
+    },
+    5: {
+        title: "Creativity & Strategic Growth",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "🎨 Highly Creative",
+        career: "Your mind is sharp, inventive, and strategic. An ideal day for problem-solving, brainstorming original concepts, or planning long-range growth.",
+        love: "Romance and self-expression flourish. A wonderful day for dates, creative endeavors, or expressing artistic passion.",
+        health: "Active mental energy. Keep your gut healthy by avoiding overly heavy or spicy food.",
+        dos: ["Brainstorm innovative ideas", "Plan strategic long-term goals", "Enjoy creative hobbies"],
+        donts: ["Don't overcomplicate simple matters", "Avoid speculative financial gambles"]
+    },
+    6: {
+        title: "Problem Solving & Efficiency",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "⚡ High Efficiency",
+        career: "A powerful day for clearing backlogs and resolving operational bottlenecks. You will easily overcome obstacles and streamline daily routines.",
+        love: "Practical support speaks louder than words today. Help your partner or family member solve an ongoing minor hassle.",
+        health: "Focus on immunity and health maintenance. Perfect timing for adopting a structured wellness habit.",
+        dos: ["Clear pending task lists", "Organize workspace clutter", "Focus on daily health habits"],
+        donts: ["Don't get trapped in minor nitpicking", "Avoid working past physical limits"]
+    },
+    7: {
+        title: "Partnerships & Alignment",
+        vibeClass: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+        vibeBadge: "🤝 Partnership Focus",
+        career: "Collaboration is your biggest asset today. Work closely with business partners, meet clients, or coordinate with key team members.",
+        love: "Relationships take center stage. Honest, diplomatic communication balances mutual expectations and builds deeper trust.",
+        health: "Maintain overall equilibrium. Ensure adequate hydration and sufficient sleep.",
+        dos: ["Seek win-win solutions", "Nurture client & partner ties", "Practice active listening"],
+        donts: ["Don't insist on absolute control", "Avoid isolated working when teamwork helps"]
+    },
+    8: {
+        title: "Caution & Quiet Reflection (Chandrashtama)",
+        vibeClass: "bg-rose-500/10 text-rose-300 border-rose-500/30",
+        vibeBadge: "⚠️ Handle With Care",
+        career: "Avoid high-risk ventures or intense negotiations today. Stick to routine responsibilities and double-check key documents.",
+        love: "You may feel more sensitive than usual. Refrain from starting sensitive emotional discussions; grant yourself peace.",
+        health: "Energy levels may fluctuate. Give priority to restful sleep, light diet, and stress alleviation.",
+        dos: ["Stick to routine, quiet tasks", "Practice patience and calm", "Prioritize rest & meditation"],
+        donts: ["Do NOT start major risky commitments today", "Avoid signing crucial contracts if skippable", "Avoid argumentative debates"]
+    },
+    9: {
+        title: "Wisdom & Higher Vision",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "☀️ Fortunate & Wise",
+        career: "Broad perspective is on your side. Excellent for long-range planning, learning new skills, consulting mentors, or legal/formal matters.",
+        love: "Shared principles and meaningful discussions create strong alignment. A peaceful and uplifted mood prevails.",
+        health: "Feeling optimistic and balanced. Great day for walking in nature or practicing mindfulness.",
+        dos: ["Seek guidance from seniors/mentors", "Focus on long-term vision", "Maintain an optimistic view"],
+        donts: ["Don't miss the big picture for tiny details", "Avoid rigid ideological stances"]
+    },
+    10: {
+        title: "Career Power & Executive Focus",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "🏆 Career Achievement",
+        career: "Strong professional trajectory today. Your expertise is recognized, decisions carry weight, and execution is effective.",
+        love: "Work commitments take significant time. Keep your loved ones updated to maintain smooth harmony.",
+        health: "Good stamina, but watch out for physical fatigue from prolonged sitting or working late.",
+        dos: ["Take decisive career steps", "Present work to leaders/clients", "Capitalize on professional focus"],
+        donts: ["Don't neglect family commitments completely", "Avoid micromanaging team members"]
+    },
+    11: {
+        title: "Gains & Social Harmony",
+        vibeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+        vibeBadge: "🎉 Rewarding Gains",
+        career: "Support from networks and positive returns on past efforts. An excellent day for collaborative milestones and group achievements.",
+        love: "Social interaction brings joy. Reconnecting with supportive friends or family brightens your mood.",
+        health: "Upbeat mindset and balanced physical vitality.",
+        dos: ["Network with peers and allies", "Execute joint initiatives", "Celebrate collective progress"],
+        donts: ["Don't isolate yourself from support", "Avoid excessive expenditure on social outings"]
+    },
+    12: {
+        title: "Rest & Strategic Audit",
+        vibeClass: "bg-rose-500/10 text-rose-300 border-rose-500/30",
+        vibeBadge: "🌙 Restful & Reflective",
+        career: "Pace may feel naturally slower. Best spent auditing ongoing work, organizing files, and planning quietly behind the scenes.",
+        love: "Favors tranquil, low-key interactions over noisy gatherings. Quiet togetherness feels soothing.",
+        health: "Energy levels require replenishment. Sleep early and grant your body rest.",
+        dos: ["Catch up on restful sleep", "Audit expenses & organize", "Clear mental clutter"],
+        donts: ["Avoid impulse financial decisions", "Don't force high-intensity workloads"]
+    }
+};
+
+/**
+ * STREAMING_CHUNK:Implementing triple-redundant instant clock hydration with fail-safe fallbacks...
+ */
+function updateLiveClock() {
+    const clockEl = document.getElementById('liveClock');
+    if (!clockEl) return;
+
+    const now = new Date();
+
+    // Primary: Formatted IST Time
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout
-        
-        const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata', { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) throw new Error('Network response not ok');
-        const data = await response.json();
-        
-        const networkDate = new Date(data.datetime);
-        const localDate = new Date();
-        globalTimeOffsetMs = networkDate.getTime() - localDate.getTime();
-    } catch (err) {
-        // Fallback: use system clock directly
-        globalTimeOffsetMs = 0;
+        const timeStr = new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(now);
+
+        const dateStr = new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }).format(now);
+
+        clockEl.innerText = `${timeStr} (${dateStr})`;
+        return;
+    } catch (e1) {
+        // Fallback 1: Manual UTC offset addition (+5.5 hrs)
+        try {
+            const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const istDate = new Date(utcMs + (3600000 * IST_OFFSET_HOURS));
+            clockEl.innerText = istDate.toLocaleTimeString('en-IN') + ' IST';
+            return;
+        } catch (e2) {
+            // Fallback 2: Standard Locale Time
+            clockEl.innerText = now.toLocaleTimeString() + ' Local';
+        }
     }
 }
 
-function updateLiveClock() {
-    const currentAdjustedTime = new Date(Date.now() + globalTimeOffsetMs);
-    document.getElementById('liveClock').innerText = currentAdjustedTime.toLocaleTimeString('en-IN', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-    }) + " | " + currentAdjustedTime.toLocaleDateString('en-IN');
-}
+// EXECUTE INSTANTLY ON SCRIPT PARSE
+updateLiveClock();
 
-// --- DUAL-MODE LOCATION ENGINE ---
-async function detectOnlineLocation() {
+/**
+ * STREAMING_CHUNK:Implementing location detection logic with automatic fallbacks...
+ */
+function detectLocation() {
     const locDisplay = document.getElementById('currentLocDisplay');
-    locDisplay.innerText = "Detecting...";
+    const cLatInput = document.getElementById('cLat');
+    const cLonInput = document.getElementById('cLon');
+    const currentCitySelect = document.getElementById('currentCitySelect');
 
-    // 1. Try Browser GPS First
+    if (locDisplay) locDisplay.innerText = "Detecting location...";
+
+    let resolved = false;
+
+    function applyLocation(lat, lon, label) {
+        if (resolved) return;
+        resolved = true;
+        
+        if (cLatInput) cLatInput.value = parseFloat(lat).toFixed(2);
+        if (cLonInput) cLonInput.value = parseFloat(lon).toFixed(2);
+        if (locDisplay) locDisplay.innerText = label;
+
+        if (currentCitySelect) {
+            let matched = false;
+            for (let i = 0; i < currentCitySelect.options.length; i++) {
+                const optVal = currentCitySelect.options[i].value;
+                if (optVal !== 'custom') {
+                    const [oLat, oLon] = optVal.split(',').map(Number);
+                    if (Math.abs(oLat - lat) < 0.3 && Math.abs(oLon - lon) < 0.3) {
+                        currentCitySelect.selectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!matched) currentCitySelect.value = 'custom';
+        }
+    }
+
+    function applyDefaultFallback() {
+        applyLocation(28.61, 77.20, "New Delhi / NCR (Default)");
+    }
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                const lat = pos.coords.latitude.toFixed(2);
-                const lon = pos.coords.longitude.toFixed(2);
-                document.getElementById('cLat').value = lat;
-                document.getElementById('cLon').value = lon;
-                document.getElementById('currentCitySelect').value = 'custom';
-                locDisplay.innerText = `GPS Active (${lat}, ${lon})`;
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                applyLocation(lat, lon, `GPS (${lat.toFixed(2)}, ${lon.toFixed(2)})`);
             },
-            async () => {
-                // 2. Fallback to Online IP Geolocation
-                await fetchIPLocation();
+            () => {
+                fetchIpLocation(applyLocation, applyDefaultFallback);
             },
-            { timeout: 4000, enableHighAccuracy: true }
+            { timeout: 2500, enableHighAccuracy: false }
         );
     } else {
-        await fetchIPLocation();
+        fetchIpLocation(applyLocation, applyDefaultFallback);
     }
+
+    setTimeout(() => {
+        if (!resolved) applyDefaultFallback();
+    }, 3000);
 }
 
-async function fetchIPLocation() {
-    const locDisplay = document.getElementById('currentLocDisplay');
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        const data = await res.json();
-        if (data.latitude && data.longitude) {
-            document.getElementById('cLat').value = data.latitude;
-            document.getElementById('cLon').value = data.longitude;
-            document.getElementById('currentCitySelect').value = 'custom';
-            locDisplay.innerText = `${data.city || 'Online IP'} (${data.latitude}, ${data.longitude})`;
-            return;
-        }
-    } catch (e) {
-        // 3. Fallback to Default (New Delhi)
-    }
-    document.getElementById('cLat').value = 28.61;
-    document.getElementById('cLon').value = 77.20;
-    document.getElementById('currentCitySelect').value = "28.61,77.20";
-    locDisplay.innerText = "New Delhi (Default)";
+function fetchIpLocation(successCallback, failCallback) {
+    fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(2000) })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.latitude && data.longitude) {
+                const cityStr = data.city ? `${data.city}, ${data.country_code}` : "Online IP";
+                successCallback(data.latitude, data.longitude, cityStr);
+            } else {
+                failCallback();
+            }
+        })
+        .catch(() => failCallback());
 }
 
-// Event Listeners for City Selectors
-document.getElementById('birthCitySelect').addEventListener('change', (e) => {
-    if (e.target.value !== 'custom') {
-        const [lat, lon] = e.target.value.split(',');
-        document.getElementById('bLat').value = lat;
-        document.getElementById('bLon').value = lon;
+/**
+ * STREAMING_CHUNK:Implementing astronomical calculation formulas (Sidereal Moon / Lahiri Ayanamsha)...
+ */
+function getJulianDate(dateObj, tzOffsetHours) {
+    let Y = dateObj.getUTCFullYear();
+    let M = dateObj.getUTCMonth() + 1;
+    let D = dateObj.getUTCDate() + (dateObj.getUTCHours() - tzOffsetHours + dateObj.getUTCMinutes() / 60.0 + dateObj.getUTCSeconds() / 3600.0) / 24.0;
+
+    if (M <= 2) {
+        Y -= 1;
+        M += 12;
     }
-});
-
-document.getElementById('currentCitySelect').addEventListener('change', (e) => {
-    if (e.target.value !== 'custom') {
-        const [lat, lon] = e.target.value.split(',');
-        document.getElementById('cLat').value = lat;
-        document.getElementById('cLon').value = lon;
-        const cityName = e.target.options[e.target.selectedIndex].text;
-        document.getElementById('currentLocDisplay').innerText = cityName;
-    }
-});
-
-document.getElementById('autoDetectBtn').addEventListener('click', async () => {
-    await syncOnlineTime();
-    await detectOnlineLocation();
-});
-
-// --- ASTRO ENGINE CALCULATIONS ---
-function getJulianDate(dateObj, tzOffset) {
-    let Y = dateObj.getUTCFullYear(), M = dateObj.getUTCMonth() + 1;
-    let D = dateObj.getUTCDate() + (dateObj.getUTCHours() - tzOffset + dateObj.getUTCMinutes()/60)/24;
-    if (M <= 2) { Y -= 1; M += 12; }
-    let A = Math.floor(Y / 100), B = 2 - A + Math.floor(A / 4);
+    let A = Math.floor(Y / 100);
+    let B = 2 - A + Math.floor(A / 4);
     return Math.floor(365.25 * (Y + 4716)) + Math.floor(30.6001 * (M + 1)) + D + B - 1524.5;
 }
 
 function getSiderealMoonLongitude(JD) {
     let T = (JD - 2451545.0) / 36525.0;
+    
     let L0 = 218.3164477 + 481267.88123421 * T;
     let M = 134.9633964 + 477198.8675055 * T;
     let D = 297.8501921 + 445267.2221703 * T;
-    let dL = 6.2886 * Math.sin(M * Math.PI / 180) + 1.2740 * Math.sin((2*D - M) * Math.PI / 180);
+    
+    let dL = 6.2886 * Math.sin(M * Math.PI / 180) + 1.2740 * Math.sin((2 * D - M) * Math.PI / 180);
     let tropicalMoon = (L0 + dL) % 360;
     if (tropicalMoon < 0) tropicalMoon += 360;
+    
     let ayanamsha = 23.85 + (T * 1.396041);
     let sidereal = (tropicalMoon - ayanamsha) % 360;
     return sidereal < 0 ? sidereal + 360 : sidereal;
 }
 
-const DETAILED_PREDICTIONS = {
-    1: { overall: "High Energy & Personal Focus", vibe: "vibe-excellent", vibeText: "Strong & Favorable", career: "You have natural initiative today. Ideal for pitching new ideas, taking leadership in meetings, and clearing backlog tasks.", love: "Your confidence is attractive today. Express your feelings directly, but stay open to your partner's thoughts.", health: "Physical energy is high. Great day for physical exercise or starting an active routine.", dos: ["Take charge of key projects", "Focus on physical activity", "Express your ideas directly"], donts: ["Don't dominate team discussions", "Don't ignore others' input"] },
-    2: { overall: "Financial & Family Focus", vibe: "vibe-excellent", vibeText: "Financially Productive", career: "A productive day for managing budgets, reviewing terms, or closing ongoing tasks. Steady work yields solid results.", love: "Family discussions take center stage. Warm and supportive conversations strengthen personal bonds.", health: "Pay attention to dietary habits. Stick to light, fresh, home-cooked food.", dos: ["Review finances and budgets", "Have constructive family talks", "Focus on practical goals"], donts: ["Avoid impulse spending", "Don't make hasty financial promises"] },
-    3: { overall: "Communication & High Momentum", vibe: "vibe-excellent", vibeText: "Highly Active", career: "Short-term efforts pay off quickly today. High momentum for writing, emails, presentations, and team coordination.", love: "Playful communication brings joy. Great day for casual outings, texting, and sharing humor.", health: "High stamina and mental agility. Keep your posture relaxed during desk hours.", dos: ["Send crucial communications", "Connect with colleagues", "Take quick action on pending tasks"], donts: ["Don't leave tasks half-done", "Avoid unnecessary debates"] },
-    4: { overall: "Home & Emotional Comfort", vibe: "vibe-moderate", vibeText: "Grounding Day", career: "Best suited for organizing work behind the scenes. Focus on stabilizing existing work rather than starting risky ventures.", love: "Desire for peace and comfort at home. A quiet evening with family will recharge your emotional energy.", health: "Prioritize emotional rest. Take time to relax and unwind after work.", dos: ["Focus on domestic comfort", "Spend quality time with family", "Recharge your mind"], donts: ["Don't bring work friction home", "Avoid emotional overreactions"] },
-    5: { overall: "Creativity & Strategic Growth", vibe: "vibe-excellent", vibeText: "Creative & Favorable", career: "Your mind is sharp and creative. Excellent for problem-solving, planning, or working on creative concepts.", love: "Romance and self-expression are favored. Great day for pleasant dates or lighthearted conversations.", health: "Mental energy is active. Keep your digestion balanced with wholesome meals.", dos: ["Brainstorm creative solutions", "Plan strategic steps ahead", "Enjoy pleasant social moments"], donts: ["Don't overcomplicate simple matters", "Avoid speculative financial gambles"] },
-    6: { overall: "Organization & Problem Solving", vibe: "vibe-excellent", vibeText: "Productive & Efficient", career: "A powerful day for getting things done. You will easily overcome work obstacles, resolve pending issues, and clear clutter.", love: "Practical help speaks louder than words today. Support loved ones with concrete actions.", health: "Focus on immunity and daily routines. Ideal day for starting a balanced diet.", dos: ["Clear pending checklists", "Organize your workspace", "Focus on daily health habits"], donts: ["Don't get stuck in minor fault-finding", "Avoid overworking past energy limits"] },
-    7: { overall: "Partnerships & Relationships", vibe: "vibe-moderate", vibeText: "Relationship Focus", career: "Collaboration is your key asset today. Work closely with partners, meet clients, or coordinate with co-workers.", love: "Relationships take priority. Open, calm dialogue balances mutual expectations and builds trust.", health: "Maintain balance. Ensure adequate hydration and restful sleep.", dos: ["Seek win-win solutions", "Focus on client & partner ties", "Maintain diplomatic balance"], donts: ["Don't insist on having the last word", "Avoid isolated working when teamwork is better"] },
- 
+/**
+ * STREAMING_CHUNK:Binding DOM lifecycle events and form submission handlers...
+ */
+function initializeApp() {
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
+
+    detectLocation();
+
+    // Default DOB (25 yrs ago) and TOB
+    const dobInput = document.getElementById('dob');
+    const tobInput = document.getElementById('tob');
+    if (dobInput && !dobInput.value) {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 25);
+        dobInput.value = d.toISOString().split('T')[0];
+    }
+    if (tobInput && !tobInput.value) {
+        tobInput.value = "08:30:00";
+    }
+
+    // DropdownListeners
+    const birthCitySelect = document.getElementById('birthCitySelect');
+    if (birthCitySelect) {
+        birthCitySelect.addEventListener('change', (e) => {
+            if (e.target.value !== 'custom') {
+                const [lat, lon] = e.target.value.split(',');
+                document.getElementById('bLat').value = lat;
+                document.getElementById('bLon').value = lon;
+            }
+        });
+    }
+
+    const currentCitySelect = document.getElementById('currentCitySelect');
+    if (currentCitySelect) {
+        currentCitySelect.addEventListener('change', (e) => {
+            if (e.target.value !== 'custom') {
+                const [lat, lon] = e.target.value.split(',');
+                document.getElementById('cLat').value = lat;
+                document.getElementById('cLon').value = lon;
+                const textLabel = e.target.options[e.target.selectedIndex].text;
+                document.getElementById('currentLocDisplay').innerText = textLabel;
+            }
+        });
+    }
+
+    const autoDetectBtn = document.getElementById('autoDetectBtn');
+    if (autoDetectBtn) {
+        autoDetectBtn.addEventListener('click', () => {
+            detectLocation();
+        });
+    }
+
+    // Horoscope Form Submission
+    const horoscopeForm = document.getElementById('horoscopeForm');
+    if (horoscopeForm) {
+        horoscopeForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const dob = document.getElementById('dob').value;
+            const tob = document.getElementById('tob').value;
+
+            if (!dob || !tob) return;
+
+            const birthDateStr = `${dob}T${tob}`;
+            const birthDate = new Date(birthDateStr);
+
+            const birthJD = getJulianDate(birthDate, IST_OFFSET_HOURS);
+            const now = new Date();
+            const currentJD = getJulianDate(now, IST_OFFSET_HOURS);
+
+            const birthMoonLong = getSiderealMoonLongitude(birthJD);
+            const currentMoonLong = getSiderealMoonLongitude(currentJD);
+
+            const birthRashiIdx = Math.floor(birthMoonLong / 30);
+            const currentRashiIdx = Math.floor(currentMoonLong / 30);
+
+            const transitHouse = ((currentRashiIdx - birthRashiIdx + 12) % 12) + 1;
+            const pred = ASTRO_PREDICTIONS[transitHouse] || ASTRO_PREDICTIONS[1];
+
+            const outputContainer = document.getElementById('outputContainer');
+            if (outputContainer) {
+                outputContainer.innerHTML = `
+                    <div class="space-y-4 animate-fadeIn">
+                        
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-800">
+                            <span class="px-3 py-1.5 rounded-lg border font-semibold text-xs ${pred.vibeClass}">
+                                ${pred.vibeBadge}
+                            </span>
+                            <span class="text-xs text-gray-400 font-mono">
+                                House ${transitHouse} Transit
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-bold text-white">${pred.title}</h3>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="bg-cosmic-900/60 border border-gray-800 rounded-xl p-3.5 space-y-1">
+                                <h4 class="text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>💼</span> Career & Professional Outlook
+                                </h4>
+                                <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">${pred.career}</p>
+                            </div>
+
+                            <div class="bg-cosmic-900/60 border border-gray-800 rounded-xl p-3.5 space-y-1">
+                                <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>💖</span> Relationships & Personal Harmony
+                                </h4>
+                                <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">${pred.love}</p>
+                            </div>
+
+                            <div class="bg-cosmic-900/60 border border-gray-800 rounded-xl p-3.5 space-y-1">
+                                <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>🌿</span> Health & Vitality
+                                </h4>
+                                <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">${pred.health}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div class="bg-emerald-950/20 border border-emerald-500/20 rounded-xl p-3">
+                                <h5 class="text-xs font-bold text-emerald-400 mb-2 flex items-center gap-1">
+                                    <span>✓</span> Recommended Today
+                                </h5>
+                                <ul class="space-y-1 text-xs text-gray-300">
+                                    ${pred.dos.map(item => `<li class="flex items-start gap-1.5"><span class="text-emerald-500">•</span><span>${item}</span></li>`).join('')}
+                                </ul>
+                            </div>
+
+                            <div class="bg-rose-950/20 border border-rose-500/20 rounded-xl p-3">
+                                <h5 class="text-xs font-bold text-rose-400 mb-2 flex items-center gap-1">
+                                    <span>✕</span> Things to Avoid
+                                </h5>
+                                <ul class="space-y-1 text-xs text-gray-300">
+                                    ${pred.donts.map(item => `<li class="flex items-start gap-1.5"><span class="text-rose-500">•</span><span>${item}</span></li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+            }
+        });
+    }
+}
+
+// MULTI-STAGE ATTACHMENT TO GUARANTEE INITIALIZATION IN ALL BROWSERS
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
+window.addEventListener('load', updateLiveClock);
+</script>
+
+</body>
+</html>
