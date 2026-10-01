@@ -185,4 +185,19 @@ function todayV(p,n){const now=Date.now(),jd=jdOf(now),s=sky(jd),L=loc.lat!=null
 function chartV(p,n){const s=n.s,a=sg(n.asc),g=nk(s.L.Mo);
  return`<div class="card"><h2>Birth details</h2><p>Ascendant <b>${SG[a]} ${dm(n.asc)}</b>, Moon in <b>${SG[sg(s.L.Mo)]}</b>, ${NK[g]} pada ${pd(s.L.Mo)}. Lahiri ayanamsha ${Math.floor(s.a)}°${String(Math.floor(s.a%1*60)).padStart(2,'0')}′, whole-sign houses.</p></div>
  <div class="grid"><div class="card"><h2>Lagna chart (D1)</h2>${chart(a,items(s,a))}</div><div class="card"><h2>Navamsa (D9)</h2>${chart(Math.floor(n.asc/(10/3))%12,items(s,Math.floor(n.asc/(10/3))%12,1))}</div></div>
- <div class="card tbl"><h2>Planet positions</h2><table><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>Nakshatra, pada</th><th>House</th></t
+ <div class="card tbl"><h2>Planet positions</h2><table><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>Nakshatra, pada</th><th>House</th></tr><tr><td>Ascendant</td><td>${SG[a]}</td><td>${dm(n.asc)}</td><td>${NK[nk(n.asc)]} ${pd(n.asc)}</td><td>1</td></tr>${PK.map(k=>row(k,s,n.asc)).join('')}</table></div>`}
+function dashaV(p,n){const now=Date.now(),c=curDasha(n,now),a=sg(n.asc),s=n.s,hm=hs(sg(s.L[c.md.l]),a),ha=hs(sg(s.L[c.ad.l]),a),nx=c.D[c.D.indexOf(c.md)+1];
+ return`<div class="grid"><div class="card"><h2>Now: ${PN[c.md.l]} mahadasha</h2><p>${fd(c.md.s)} to ${fd(c.md.e)}</p><p>${PN[c.md.l]} sits in your house ${hm}, so this long period centres on ${HT[hm-1]}. Its general tone is ${DT[c.md.l]}.</p></div>
+ <div class="card"><h2>Sub-period: ${PN[c.ad.l]} antardasha</h2><p>${fd(c.ad.s)} to ${fd(c.ad.e)}</p><p>${PN[c.ad.l]} is in house ${ha}, bringing ${HT[ha-1]} to the front, with ${DT[c.ad.l]}.</p>${nx?`<p class="note">Next mahadasha: ${PN[nx.l]} from ${fd(nx.s)}, ${DT[nx.l]}.</p>`:''}</div></div>
+ <div class="card tbl"><details open><summary>Antardashas in ${PN[c.md.l]} mahadasha</summary><table><tr><th>Sub-period</th><th>From</th><th>To</th></tr>${c.A.map(x=>`<tr${x==c.ad?' class="ok"':''}><td>${PN[c.md.l]}–${PN[x.l]}</td><td>${fd(x.s)}</td><td>${fd(x.e)}</td></tr>`).join('')}</table></details></div>
+ <div class="card tbl"><h2>Vimshottari mahadashas</h2><table><tr><th>Period</th><th>From</th><th>To</th><th>Focus</th></tr>${c.D.map(x=>`<tr${x==c.md?' class="ok"':''}><td>${PN[x.l]}</td><td>${fd(x.s)}</td><td>${fd(x.e)}</td><td>${HT[hs(sg(s.L[x.l]),a)-1]}</td></tr>`).join('')}</table><p class="note">First period starts from the Moon's nakshatra balance at birth. Focus shows the house the dasha lord occupies.</p></div>`}
+function render(){entryUI();const p=cur();
+ if(!p){for(const v of['today','chart','dasha'])$('#v-'+v).innerHTML='<div class="card">Add a birth date, time and place to begin.</div>';return}
+ let n;try{n=natal(p)}catch(e){return}
+ $('#v-today').innerHTML=todayV(p,n);$('#v-chart').innerHTML=chartV(p,n);$('#v-dasha').innerHTML=dashaV(p,n)}
+render();
+if(navigator.geolocation)navigator.geolocation.getCurrentPosition(g=>{loc={lat:g.coords.latitude,lon:g.coords.longitude,label:'your device location'};if(mode===null)render()},()=>{},{timeout:10000});
+setInterval(()=>{if(mode===null&&cur())render()},6e4);
+</script>
+</body>
+</html>
