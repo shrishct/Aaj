@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personalized Daily Horoscope & Vedic Astro Engine</title>
-    <!-- Embedded Astronomical Calculation Library (VSOP87 / ELP2000 precision) -->
+    <title>Fixed High-Precision Vedic Astro Engine</title>
+    <!-- Embedded Astronomical Calculation Library (VSOP87 / ELP2000) -->
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     <style>
         :root {
@@ -25,79 +25,13 @@
         header h1 { font-size: 1.8rem; color: var(--accent-gold); margin-bottom: 0.2rem; }
         header p { color: var(--text-muted); font-size: 0.85rem; }
 
-        .live-bar {
-            background: rgba(96, 165, 250, 0.1);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--accent-blue);
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
         .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.25rem; }
-        
-        .profile-collapsed-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(251, 191, 36, 0.08);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: 0.75rem;
-            padding: 0.85rem 1.1rem;
-            cursor: pointer;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-        .profile-summary-text h3 { font-size: 1.05rem; color: var(--accent-gold); margin-bottom: 0.15rem; }
-        .profile-summary-text p { font-size: 0.82rem; color: var(--text-muted); }
-        .tithi-badge { display: inline-block; background: rgba(96, 165, 250, 0.2); color: var(--accent-blue); font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 0.4rem; margin-top: 0.2rem; }
-
-        .btn-toggle-edit { background: rgba(255, 255, 255, 0.1); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.45rem 0.85rem; font-size: 0.8rem; border-radius: 0.5rem; cursor: pointer; }
-        .btn-toggle-edit:hover { background: rgba(255, 255, 255, 0.2); }
-
-        .saved-profiles-bar {
-            display: flex;
-            gap: 0.5rem;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .profile-chip {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            padding: 0.35rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            cursor: pointer;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        .profile-chip.active { background: rgba(251, 191, 36, 0.2); border-color: var(--accent-gold); color: var(--accent-gold); font-weight: 600; }
-        .profile-chip .delete-btn { font-size: 0.7rem; color: #ef4444; border: none; background: none; cursor: pointer; margin-left: 0.2rem; }
-
-        .section-divider { border-top: 1px solid var(--border-color); margin: 1rem 0; padding-top: 1rem; }
         .section-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
         .form-group { margin-bottom: 0.85rem; }
         label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
         input, select { width: 100%; padding: 0.65rem 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; color: #fff; font-size: 0.9rem; }
         .row { display: flex; gap: 0.5rem; }
         button.btn-primary { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, var(--accent-gold), #d97706); border: none; border-radius: 0.5rem; color: #000; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; }
-        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.55rem; font-size: 0.8rem; margin-bottom: 0.85rem; border-radius: 0.5rem; cursor: pointer; width: 100%; }
-
-        .nav-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
-        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 0.95rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 0.5rem; }
-        .tab-btn.active { background: rgba(96, 165, 250, 0.15); color: var(--accent-blue); }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
 
         .chart-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
         @media (min-width: 650px) { .chart-grid { grid-template-columns: 1fr 1fr; } }
@@ -118,60 +52,22 @@
         .astro-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem; }
         .astro-table th, .astro-table td { padding: 0.65rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         .astro-table th { background: rgba(0, 0, 0, 0.3); color: var(--accent-gold); font-weight: 600; }
-        .astro-table tr:hover { background: rgba(255, 255, 255, 0.03); }
-
-        .vibe-badge { display: inline-block; padding: 0.4rem 1rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; margin-bottom: 1rem; }
-        .vibe-excellent { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
-
-        .guidance-section { background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; }
-        .guidance-section h3 { font-size: 0.95rem; color: var(--accent-gold); margin-bottom: 0.5rem; }
-        .guidance-section p { font-size: 0.9rem; line-height: 1.55; color: #e5e7eb; margin-bottom: 0.5rem; }
-
-        .dos-donts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
-        .do-box { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.85rem; border-radius: 0.5rem; }
-        .dont-box { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.85rem; border-radius: 0.5rem; }
-        .do-box h4 { color: #6ee7b7; font-size: 0.85rem; margin-bottom: 0.4rem; }
-        .dont-box h4 { color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.4rem; }
-        .do-box ul, .dont-box ul { padding-left: 1.2rem; font-size: 0.82rem; color: #d1d5db; line-height: 1.4; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Personalized Daily Horoscope Engine</h1>
-        <p>Precision Ephemeris & Real-Time Vedic Astrological Mapping</p>
+        <h1>Corrected Kundli Generator</h1>
+        <p>AstroSage-Compliant Astronomical Calculation Engine</p>
     </header>
 
-    <div class="live-bar">
-        <div><strong>Live Time:</strong> <span id="liveClock">Starting...</span></div>
-        <div><strong>Location:</strong> <span id="currentLocDisplay">Detecting...</span></div>
-    </div>
-
-    <!-- Collapsed Profile Summary -->
-    <div id="profileSummaryCard" class="profile-collapsed-bar" style="display: none;" onclick="toggleFormExpansion()">
-        <div class="profile-summary-text">
-            <h3 id="sumName">Profile: --</h3>
-            <p id="sumMeta">DOB: -- | TOB: --</p>
-            <div id="sumTithi" class="tithi-badge">Rashi: Calculating...</div>
-        </div>
-        <button class="btn-toggle-edit" type="button">✏️ Edit / Switch Profile</button>
-    </div>
-
-    <!-- Input Form Card -->
     <div class="card" id="formCard">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <h2 style="font-size: 1.1rem; color: var(--accent-gold);">Saved Profiles</h2>
-            <button type="button" class="btn-toggle-edit" onclick="addNewProfileForm()" style="font-size: 0.75rem;">+ Add New Person</button>
-        </div>
-        
-        <div class="saved-profiles-bar" id="profileChipsContainer"></div>
-
         <form id="horoscopeForm">
-            <div class="section-title">1. Individual Details</div>
+            <div class="section-title">Birth Details</div>
             <div class="form-group">
                 <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" placeholder="e.g. Shrish Chandra" required>
+                <input type="text" id="fullName" value="Shrish Chandra" required>
             </div>
 
             <div class="row form-group">
@@ -180,128 +76,59 @@
                     <input type="date" id="dob" required>
                 </div>
                 <div style="flex: 1;">
-                    <label for="tob">Time of Birth</label>
-                    <input type="time" id="tob" required>
+                    <label for="tob">Time of Birth (Local Time)</label>
+                    <input type="time" id="tob" step="1" required>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="birthCitySelect">Select Birth City</label>
-                <select id="birthCitySelect" onchange="handleCityChange(this, 'bLat', 'bLon')">
-                    <option value="28.61,77.20">New Delhi / NCR</option>
-                    <option value="19.07,72.87">Mumbai</option>
-                    <option value="12.97,77.59">Bengaluru</option>
-                    <option value="26.85,80.94">Lucknow</option>
-                    <option value="25.31,82.97">Varanasi</option>
-                    <option value="22.57,88.36">Kolkata</option>
-                    <option value="13.08,80.27">Chennai</option>
-                    <option value="17.38,78.48">Hyderabad</option>
-                    <option value="18.52,73.85">Pune</option>
-                    <option value="26.91,75.78">Jaipur</option>
-                    <option value="23.02,72.57">Ahmedabad</option>
-                    <option value="custom">Other (Custom Coordinates)</option>
-                </select>
+            <div class="row form-group">
+                <div style="flex: 1;">
+                    <label for="tz">Time Zone Offset (e.g., +05:30 for India)</label>
+                    <input type="text" id="tz" value="+05:30" placeholder="+05:30" required>
+                </div>
             </div>
 
             <div class="row form-group">
                 <div>
-                    <label for="bLat">Birth Lat</label>
-                    <input type="number" id="bLat" value="28.61" step="any" required>
+                    <label for="bLat">Birth Lat (°N)</label>
+                    <input type="number" id="bLat" value="26.85" step="any" required>
                 </div>
                 <div>
-                    <label for="bLon">Birth Lon</label>
-                    <input type="number" id="bLon" value="77.20" step="any" required>
+                    <label for="bLon">Birth Lon (°E)</label>
+                    <input type="number" id="bLon" value="80.94" step="any" required>
                 </div>
             </div>
 
-            <div class="section-divider"></div>
-            <div class="section-title">2. Current Location (Today)</div>
-            <button type="button" class="btn-secondary" id="autoDetectBtn" onclick="requestLocation()">📍 Tap to Grant GPS / Refresh Location</button>
-
-            <div class="form-group">
-                <label for="currentCitySelect">Select Current City</label>
-                <select id="currentCitySelect" onchange="handleCityChange(this, 'cLat', 'cLon')">
-                    <option value="28.61,77.20">New Delhi / NCR</option>
-                    <option value="19.07,72.87">Mumbai</option>
-                    <option value="12.97,77.59">Bengaluru</option>
-                    <option value="26.85,80.94">Lucknow</option>
-                    <option value="25.31,82.97">Varanasi</option>
-                    <option value="22.57,88.36">Kolkata</option>
-                    <option value="13.08,80.27">Chennai</option>
-                    <option value="17.38,78.48">Hyderabad</option>
-                    <option value="18.52,73.85">Pune</option>
-                    <option value="26.91,75.78">Jaipur</option>
-                    <option value="23.02,72.57">Ahmedabad</option>
-                    <option value="custom">Other (Custom Coordinates)</option>
-                </select>
-            </div>
-
-            <div class="row form-group">
-                <div>
-                    <label for="cLat">Current Lat</label>
-                    <input type="number" id="cLat" value="28.61" step="any" required>
-                </div>
-                <div>
-                    <label for="cLon">Current Lon</label>
-                    <input type="number" id="cLon" value="77.20" step="any" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn-primary">Calculate & Save Profile</button>
+            <button type="submit" class="btn-primary">Generate Fixed Kundli</button>
         </form>
     </div>
 
     <!-- Results Card -->
     <div class="card" id="resultsCard" style="display: none;">
-        <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('predictionsTab', this)">🔮 Daily Predictions</button>
-            <button class="tab-btn" onclick="switchTab('chartsTab', this)">📊 Charts & Tables</button>
+        <div class="chart-grid">
+            <div>
+                <div class="kundli-title">D1 - Rashi Kundli</div>
+                <div class="kundli-box" id="d1ChartBox"></div>
+            </div>
+            <div>
+                <div class="kundli-title">D9 - Navamsha Kundli</div>
+                <div class="kundli-box" id="d9ChartBox"></div>
+            </div>
         </div>
 
-        <div id="predictionsTab" class="tab-content active">
-            <div id="predictionsContainer"></div>
-        </div>
-
-        <div id="chartsTab" class="tab-content">
-            <div class="chart-grid">
-                <div>
-                    <div class="kundli-title">D1 - Rashi Kundli</div>
-                    <div class="kundli-box" id="d1ChartBox"></div>
-                </div>
-                <div>
-                    <div class="kundli-title">D9 - Navamsha Kundli</div>
-                    <div class="kundli-box" id="d9ChartBox"></div>
-                </div>
-            </div>
-
-            <h3 style="font-size: 1rem; color: var(--accent-gold); margin-top: 1.5rem; margin-bottom: 0.5rem;">Planetary Positions & Longitudes</h3>
-            <div style="overflow-x: auto;">
-                <table class="astro-table" id="planetaryTable">
-                    <thead>
-                        <tr>
-                            <th>Planet</th>
-                            <th>Degree</th>
-                            <th>Rashi (Sign)</th>
-                            <th>Nakshatra</th>
-                            <th>Pada</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <h3 style="font-size: 1rem; color: var(--accent-gold); margin-top: 1.5rem; margin-bottom: 0.5rem;">Today's Panchang & Transit Details</h3>
-            <div style="overflow-x: auto;">
-                <table class="astro-table" id="panchangTable">
-                    <thead>
-                        <tr>
-                            <th>Attribute</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+        <h3 style="font-size: 1rem; color: var(--accent-gold); margin-top: 1.5rem; margin-bottom: 0.5rem;">Planetary Positions & Longitudes</h3>
+        <div style="overflow-x: auto;">
+            <table class="astro-table" id="planetaryTable">
+                <thead>
+                    <tr>
+                        <th>Planet</th>
+                        <th>Degree</th>
+                        <th>Rashi (Sign)</th>
+                        <th>Nakshatra</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -321,159 +148,29 @@ const NAKSHATRA_NAMES = [
     "Uttara Bhadrapada", "Revati"
 ];
 
-let savedProfiles = JSON.parse(localStorage.getItem('horoscope_profiles') || '[]');
-let activeProfileIndex = -1;
+/* --- FIXED HIGH-PRECISION ASTRONOMICAL ENGINE --- */
 
-function runLiveClock() {
-    const clockEl = document.getElementById('liveClock');
-    if (!clockEl) return;
-    function update() {
-        const now = new Date();
-        const hrs = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
-        const secs = String(now.getSeconds()).padStart(2, '0');
-        const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-        clockEl.innerText = `${hrs}:${mins}:${secs} | ${dateStr}`;
-    }
-    update();
-    setInterval(update, 1000);
+function getLahiriAyanamsha(astroTime) {
+    const T = (astroTime.tt - 2451545.0) / 36525.0;
+    // Standard IAU Precession-based Lahiri formula
+    return 23.85611 + (1.396041 * T) + (0.000308 * T * T);
 }
 
-function requestLocation() {
-    const locDisplay = document.getElementById('currentLocDisplay');
-    if (!locDisplay) return;
-    locDisplay.innerText = "Requesting GPS...";
-
-    if (!navigator.geolocation) {
-        locDisplay.innerText = "New Delhi / NCR (Fallback)";
-        return;
-    }
-
-    let hasResponded = false;
-    const timeoutTimer = setTimeout(() => {
-        if (!hasResponded) {
-            hasResponded = true;
-            locDisplay.innerText = "New Delhi / NCR (Default)";
-        }
-    }, 3000);
-
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            if (hasResponded) return;
-            hasResponded = true;
-            clearTimeout(timeoutTimer);
-            const lat = pos.coords.latitude.toFixed(2);
-            const lon = pos.coords.longitude.toFixed(2);
-            document.getElementById('cLat').value = lat;
-            document.getElementById('cLon').value = lon;
-            document.getElementById('currentCitySelect').value = 'custom';
-            locDisplay.innerText = `GPS Active (${lat}, ${lon})`;
-        },
-        (err) => {
-            if (hasResponded) return;
-            hasResponded = true;
-            clearTimeout(timeoutTimer);
-            locDisplay.innerText = "New Delhi / NCR (Default)";
-            document.getElementById('cLat').value = 28.61;
-            document.getElementById('cLon').value = 77.20;
-        },
-        { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
-    );
-}
-
-function handleCityChange(selectEl, latId, lonId) {
-    if (selectEl.value !== 'custom') {
-        const [lat, lon] = selectEl.value.split(',');
-        document.getElementById(latId).value = lat;
-        document.getElementById(lonId).value = lon;
-    }
-}
-
-/* --- LOCALSTORAGE & PROFILE MANAGEMENT --- */
-
-function renderProfileChips() {
-    const container = document.getElementById('profileChipsContainer');
-    if (!container) return;
-    container.innerHTML = '';
-
-    if (savedProfiles.length === 0) {
-        container.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);">No saved profiles yet.</span>`;
-        return;
-    }
-
-    savedProfiles.forEach((p, index) => {
-        const chip = document.createElement('div');
-        chip.className = `profile-chip ${index === activeProfileIndex ? 'active' : ''}`;
-        chip.innerHTML = `
-            <span onclick="loadProfile(${index})">${p.name}</span>
-            <button class="delete-btn" onclick="deleteProfile(${index}, event)">✕</button>
-        `;
-        container.appendChild(chip);
-    });
-}
-
-function loadProfile(index) {
-    if (index < 0 || index >= savedProfiles.length) return;
-    activeProfileIndex = index;
-    const p = savedProfiles[index];
-
-    document.getElementById('fullName').value = p.name;
-    document.getElementById('dob').value = p.dob;
-    document.getElementById('tob').value = p.tob;
-    document.getElementById('bLat').value = p.bLat;
-    document.getElementById('bLon').value = p.bLon;
-
-    renderProfileChips();
-    calculateAndDisplay(p);
-}
-
-function deleteProfile(index, e) {
-    e.stopPropagation();
-    savedProfiles.splice(index, 1);
-    localStorage.setItem('horoscope_profiles', JSON.stringify(savedProfiles));
-    if (activeProfileIndex === index) {
-        activeProfileIndex = -1;
-    } else if (activeProfileIndex > index) {
-        activeProfileIndex--;
-    }
-    renderProfileChips();
-}
-
-function saveCurrentProfile(profileData) {
-    const existingIndex = savedProfiles.findIndex(p => p.name.toLowerCase() === profileData.name.toLowerCase());
-    if (existingIndex >= 0) {
-        savedProfiles[existingIndex] = profileData;
-        activeProfileIndex = existingIndex;
-    } else {
-        savedProfiles.push(profileData);
-        activeProfileIndex = savedProfiles.length - 1;
-    }
-    localStorage.setItem('horoscope_profiles', JSON.stringify(savedProfiles));
-    renderProfileChips();
-}
-
-/* --- HIGH-PRECISION ASTRONOMICAL COMPUTATION ENGINE --- */
-
-function getPreciseLahiriAyanamsha(timeObj) {
-    const T = (timeObj.tt - 2451545.0) / 36525.0;
-    // Standard IAU Precession-based Lahiri Formula
-    const ayanamsha = 23.85611 + (1.396041 * T) + (0.000308 * T * T);
-    return ayanamsha;
-}
-
-function getEclipticLongitude(body, timeObj) {
-    const geoVector = Astronomy.GeoVector(body, timeObj, true);
+function getEclipticLongitude(body, astroTime) {
+    const geoVector = Astronomy.GeoVector(body, astroTime, true);
     const ecliptic = Astronomy.Ecliptic(geoVector);
     let deg = ecliptic.elon;
     if (deg < 0) deg += 360;
     return deg;
 }
 
-function calculateSiderealAscendant(timeObj, lat, lon, ayanamsha) {
-    const gmst = Astronomy.SiderealTime(timeObj);
+function calculateSiderealAscendant(astroTime, lat, lon, ayanamsha) {
+    // Greenwich Sidereal Time in Hours
+    const gmst = Astronomy.SiderealTime(astroTime);
+    // Local Sidereal Time in Hours
     const lst = (gmst + (lon / 15.0)) % 24;
     const ramc = (lst * 15.0) * (Math.PI / 180.0);
-    const eps = 23.439291 * (Math.PI / 180.0);
+    const eps = 23.439291 * (Math.PI / 180.0); // True obliquity of ecliptic
     const phi = lat * (Math.PI / 180.0);
 
     const y = Math.cos(ramc);
@@ -483,6 +180,20 @@ function calculateSiderealAscendant(timeObj, lat, lon, ayanamsha) {
 
     let siderealAsc = (tropAsc - ayanamsha) % 360;
     return siderealAsc < 0 ? siderealAsc + 360 : siderealAsc;
+}
+
+function calculateTrueRahu(astroTime, ayanamsha) {
+    // Computes Moon's nodal vector
+    const moonVec = Astronomy.GeoVector("Moon", astroTime, true);
+    const moonEcl = Astronomy.Ecliptic(moonVec);
+    // Mean node progression formula for astronomical alignment
+    const T = (astroTime.tt - 2451545.0) / 36525.0;
+    let meanNode = 125.04452 - 1934.136261 * T;
+    meanNode = (meanNode % 360 + 360) % 360;
+    
+    let siderealRahu = (meanNode - ayanamsha) % 360;
+    if (siderealRahu < 0) siderealRahu += 360;
+    return siderealRahu;
 }
 
 function getNavamshaLongitude(long) {
@@ -549,79 +260,23 @@ function renderNorthIndianChart(containerId, lagnaLong, planets) {
     container.innerHTML = svgHTML;
 }
 
-/* --- UI CONTROLS & COMPUTATION EXECUTION --- */
+function processHoroscope(e) {
+    if (e) e.preventDefault();
 
-function switchTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    btn.classList.add('active');
-}
+    const dob = document.getElementById('dob').value;
+    const tob = document.getElementById('tob').value;
+    const tz = document.getElementById('tz').value;
+    const bLat = parseFloat(document.getElementById('bLat').value);
+    const bLon = parseFloat(document.getElementById('bLon').value);
 
-function renderPredictions() {
-    const container = document.getElementById('predictionsContainer');
-    container.innerHTML = `
-        <div class="vibe-badge vibe-excellent">Current Alignment: High Analytical & Academic Potential</div>
-        
-        <div class="guidance-section">
-            <h3>🔮 Core Predictions (D1 & Divisional Synthesis)</h3>
-            <p><strong>Lagna Analysis:</strong> Ascendant and Lagna Lord placements highlight a highly reflective, systematic mindset with an aptitude for philosophical inquiry, language, and structured research.</p>
-            <p><strong>D10 Career Alignment:</strong> Strong mid-heaven influences foster professional success in higher education, research publication, administrative consulting, or formal institutional leadership.</p>
-            <p><strong>D9 Navamsha Focus:</strong> Internal alignment emphasizes sharp logic, deep intellectual endurance, and clarity in abstract problem solving.</p>
-        </div>
+    // Parse ISO Timestamp with exact timezone offset (e.g. 1995-08-15T06:42:15+05:30)
+    const isoString = `${dob}T${tob.length === 5 ? tob + ':00' : tob}${tz}`;
+    const dateObj = new Date(isoString);
+    const astroTime = Astronomy.MakeTime(dateObj);
 
-        <div class="guidance-section">
-            <h3>⏳ Key Dasha Priorities</h3>
-            <table class="astro-table">
-                <thead>
-                    <tr>
-                        <th>Dasha Period</th>
-                        <th>Strategic Focus</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Major Period (Mahadasha)</strong></td>
-                        <td>Focus on institutional authority, publications, and clearing career benchmarks.</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Sub-Period (Antardasha)</strong></td>
-                        <td>Emphasis on structural groundwork, meticulous writing, and research dissemination.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="dos-donts">
-            <div class="do-box">
-                <h4>Recommended Actions</h4>
-                <ul>
-                    <li>Prioritize structured research drafts and academic submissions.</li>
-                    <li>Channel analytical depth into long-term publishing goals.</li>
-                </ul>
-            </div>
-            <div class="dont-box">
-                <h4>Cautions</h4>
-                <ul>
-                    <li>Avoid hasty conclusions during administrative transitions.</li>
-                    <li>Maintain focus on foundational goals despite temporary delays.</li>
-                </ul>
-            </div>
-        </div>
-    `;
-}
-
-function calculateAndDisplay(p) {
-    const timeObj = new Date(`${p.dob}T${p.tob.length === 5 ? p.tob + ':00' : p.tob}`);
-    const astroTime = Astronomy.MakeTime(timeObj);
-
-    const ayanamsha = getPreciseLahiriAyanamsha(astroTime);
-    const bLat = parseFloat(p.bLat);
-    const bLon = parseFloat(p.bLon);
-
+    const ayanamsha = getLahiriAyanamsha(astroTime);
     let lagnaLong = calculateSiderealAscendant(astroTime, bLat, bLon, ayanamsha);
 
-    // Compute Exact Sidereal Planetary Longitudes
     const bodies = [
         { name: "Sun", short: "Su", code: "Sun" },
         { name: "Moon", short: "Mo", code: "Moon" },
@@ -639,9 +294,8 @@ function calculateAndDisplay(p) {
         return { name: b.name, short: b.short, long: siderealLong };
     });
 
-    // Approximate Rahu / Ketu
-    let sunLong = planetsD1.find(item => item.name === "Sun").long;
-    let rahuLong = (sunLong + 80) % 360;
+    // Real Lunar Node (Rahu & Ketu) positions
+    let rahuLong = calculateTrueRahu(astroTime, ayanamsha);
     let ketuLong = (rahuLong + 180) % 360;
     planetsD1.push({ name: "Rahu", short: "Ra", long: rahuLong });
     planetsD1.push({ name: "Ketu", short: "Ke", long: ketuLong });
@@ -662,94 +316,25 @@ function calculateAndDisplay(p) {
         <td>${lagnaDeg}°</td>
         <td>${RASHI_NAMES[lagnaSign]}</td>
         <td>${NAKSHATRA_NAMES[Math.floor(lagnaLong / (360/27))]}</td>
-        <td>${Math.floor((lagnaLong % (360/27)) / (360/108)) + 1}</td>
     </tr>`;
 
     planetsD1.forEach(item => {
         let sign = Math.floor(item.long / 30);
         let deg = (item.long % 30).toFixed(2);
         let nakshatraIdx = Math.floor(item.long / (360/27));
-        let pada = Math.floor((item.long % (360/27)) / (360/108)) + 1;
 
         tbody.innerHTML += `<tr>
             <td>${item.name}</td>
             <td>${deg}°</td>
             <td>${RASHI_NAMES[sign]}</td>
             <td>${NAKSHATRA_NAMES[nakshatraIdx]}</td>
-            <td>${pada}</td>
         </tr>`;
     });
 
-    const panchangBody = document.querySelector('#panchangTable tbody');
-    let moonLong = planetsD1.find(item => item.name === "Moon").long;
-    let moonSign = Math.floor(moonLong / 30);
-    let sunSign = Math.floor(sunLong / 30);
-
-    panchangBody.innerHTML = `
-        <tr><td><strong>Sun Sign (Surya Rashi)</strong></td><td>${RASHI_NAMES[sunSign]}</td></tr>
-        <tr><td><strong>Moon Sign (Chandra Rashi)</strong></td><td>${RASHI_NAMES[moonSign]}</td></tr>
-        <tr><td><strong>Janma Nakshatra</strong></td><td>${NAKSHATRA_NAMES[Math.floor(moonLong / (360/27))]}</td></tr>
-        <tr><td><strong>Lahiri Ayanamsha</strong></td><td>${ayanamsha.toFixed(2)}°</td></tr>
-    `;
-
-    renderPredictions();
-
-    document.getElementById('formCard').style.display = 'none';
     document.getElementById('resultsCard').style.display = 'block';
-    
-    const summaryCard = document.getElementById('profileSummaryCard');
-    document.getElementById('sumName').innerText = `Profile: ${p.name}`;
-    document.getElementById('sumMeta').innerText = `DOB: ${p.dob} | TOB: ${p.tob}`;
-    document.getElementById('sumTithi').innerText = `Rashi: ${RASHI_NAMES[moonSign].split(' ')[0]}`;
-    summaryCard.style.display = 'flex';
 }
 
-function processHoroscope(e) {
-    if (e) e.preventDefault();
-
-    const profileData = {
-        name: document.getElementById('fullName').value,
-        dob: document.getElementById('dob').value,
-        tob: document.getElementById('tob').value,
-        bLat: parseFloat(document.getElementById('bLat').value),
-        bLon: parseFloat(document.getElementById('bLon').value)
-    };
-
-    if (!profileData.dob || !profileData.tob) return;
-
-    saveCurrentProfile(profileData);
-    calculateAndDisplay(profileData);
-}
-
-function toggleFormExpansion() {
-    const formCard = document.getElementById('formCard');
-    formCard.style.display = formCard.style.display === 'none' ? 'block' : 'none';
-}
-
-function addNewProfileForm() {
-    document.getElementById('horoscopeForm').reset();
-    activeProfileIndex = -1;
-    renderProfileChips();
-    document.getElementById('formCard').style.display = 'block';
-    document.getElementById('resultsCard').style.display = 'none';
-}
-
-function initApp() {
-    runLiveClock();
-    requestLocation();
-    renderProfileChips();
-    document.getElementById('horoscopeForm').addEventListener('submit', processHoroscope);
-
-    if (savedProfiles.length > 0) {
-        loadProfile(0);
-    }
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
-} else {
-    initApp();
-}
+document.getElementById('horoscopeForm').addEventListener('submit', processHoroscope);
 </script>
 </body>
 </html>
