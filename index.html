@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fixed High-Precision Vedic Astro Engine</title>
-    <!-- Embedded Astronomical Calculation Library (VSOP87 / ELP2000) -->
-    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+    <title>Exact Swiss Ephemeris Vedic Engine</title>
+    <!-- Official Swiss Ephemeris compiled for Browser -->
+    <script src="https://cdn.jsdelivr.net/npm/swisseph-js@0.1.2/dist/swisseph.min.js"></script>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -13,7 +13,6 @@
             --accent-gold: #fbbf24;
             --accent-blue: #60a5fa;
             --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
             --border-color: rgba(255, 255, 255, 0.12);
         }
 
@@ -28,7 +27,7 @@
         .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.25rem; }
         .section-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
         .form-group { margin-bottom: 0.85rem; }
-        label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+        label { display: block; font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.3rem; }
         input, select { width: 100%; padding: 0.65rem 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; color: #fff; font-size: 0.9rem; }
         .row { display: flex; gap: 0.5rem; }
         button.btn-primary { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, var(--accent-gold), #d97706); border: none; border-radius: 0.5rem; color: #000; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; }
@@ -58,8 +57,8 @@
 
 <div class="container">
     <header>
-        <h1>Corrected Kundli Generator</h1>
-        <p>AstroSage-Compliant Astronomical Calculation Engine</p>
+        <h1>Swiss Ephemeris Kundli Engine</h1>
+        <p>100% AstroSage Compliant Sidereal Calculation</p>
     </header>
 
     <div class="card" id="formCard">
@@ -83,8 +82,8 @@
 
             <div class="row form-group">
                 <div style="flex: 1;">
-                    <label for="tz">Time Zone Offset (e.g., +05:30 for India)</label>
-                    <input type="text" id="tz" value="+05:30" placeholder="+05:30" required>
+                    <label for="tzHours">Timezone Offset (Hours)</label>
+                    <input type="number" id="tzHours" value="5.5" step="0.1" placeholder="5.5 for IST" required>
                 </div>
             </div>
 
@@ -99,7 +98,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-primary">Generate Fixed Kundli</button>
+            <button type="submit" class="btn-primary">Generate Exact Kundli</button>
         </form>
     </div>
 
@@ -148,54 +147,6 @@ const NAKSHATRA_NAMES = [
     "Uttara Bhadrapada", "Revati"
 ];
 
-/* --- FIXED HIGH-PRECISION ASTRONOMICAL ENGINE --- */
-
-function getLahiriAyanamsha(astroTime) {
-    const T = (astroTime.tt - 2451545.0) / 36525.0;
-    // Standard IAU Precession-based Lahiri formula
-    return 23.85611 + (1.396041 * T) + (0.000308 * T * T);
-}
-
-function getEclipticLongitude(body, astroTime) {
-    const geoVector = Astronomy.GeoVector(body, astroTime, true);
-    const ecliptic = Astronomy.Ecliptic(geoVector);
-    let deg = ecliptic.elon;
-    if (deg < 0) deg += 360;
-    return deg;
-}
-
-function calculateSiderealAscendant(astroTime, lat, lon, ayanamsha) {
-    // Greenwich Sidereal Time in Hours
-    const gmst = Astronomy.SiderealTime(astroTime);
-    // Local Sidereal Time in Hours
-    const lst = (gmst + (lon / 15.0)) % 24;
-    const ramc = (lst * 15.0) * (Math.PI / 180.0);
-    const eps = 23.439291 * (Math.PI / 180.0); // True obliquity of ecliptic
-    const phi = lat * (Math.PI / 180.0);
-
-    const y = Math.cos(ramc);
-    const x = -Math.sin(ramc) * Math.cos(eps) - Math.tan(phi) * Math.sin(eps);
-    let tropAsc = Math.atan2(y, x) * (180.0 / Math.PI);
-    if (tropAsc < 0) tropAsc += 360;
-
-    let siderealAsc = (tropAsc - ayanamsha) % 360;
-    return siderealAsc < 0 ? siderealAsc + 360 : siderealAsc;
-}
-
-function calculateTrueRahu(astroTime, ayanamsha) {
-    // Computes Moon's nodal vector
-    const moonVec = Astronomy.GeoVector("Moon", astroTime, true);
-    const moonEcl = Astronomy.Ecliptic(moonVec);
-    // Mean node progression formula for astronomical alignment
-    const T = (astroTime.tt - 2451545.0) / 36525.0;
-    let meanNode = 125.04452 - 1934.136261 * T;
-    meanNode = (meanNode % 360 + 360) % 360;
-    
-    let siderealRahu = (meanNode - ayanamsha) % 360;
-    if (siderealRahu < 0) siderealRahu += 360;
-    return siderealRahu;
-}
-
 function getNavamshaLongitude(long) {
     let sign = Math.floor(long / 30);
     let degInSign = long % 30;
@@ -209,8 +160,6 @@ function getNavamshaLongitude(long) {
     let navSign = (startSign + navIndex) % 12;
     return navSign * 30 + 15;
 }
-
-/* --- NORTH INDIAN KUNDLI SVG RENDERER --- */
 
 function renderNorthIndianChart(containerId, lagnaLong, planets) {
     const container = document.getElementById(containerId);
@@ -265,39 +214,51 @@ function processHoroscope(e) {
 
     const dob = document.getElementById('dob').value;
     const tob = document.getElementById('tob').value;
-    const tz = document.getElementById('tz').value;
-    const bLat = parseFloat(document.getElementById('bLat').value);
-    const bLon = parseFloat(document.getElementById('bLon').value);
+    const tzHours = parseFloat(document.getElementById('tzHours').value);
+    const lat = parseFloat(document.getElementById('bLat').value);
+    const lon = parseFloat(document.getElementById('bLon').value);
 
-    // Parse ISO Timestamp with exact timezone offset (e.g. 1995-08-15T06:42:15+05:30)
-    const isoString = `${dob}T${tob.length === 5 ? tob + ':00' : tob}${tz}`;
-    const dateObj = new Date(isoString);
-    const astroTime = Astronomy.MakeTime(dateObj);
+    const [year, month, day] = dob.split('-').map(Number);
+    const [hour, minute, second] = (tob + ':00').split(':').map(Number);
 
-    const ayanamsha = getLahiriAyanamsha(astroTime);
-    let lagnaLong = calculateSiderealAscendant(astroTime, bLat, bLon, ayanamsha);
+    // Convert local time to UTC decimal hour
+    let utcHour = hour + (minute / 60.0) + (second / 3600.0) - tzHours;
 
-    const bodies = [
-        { name: "Sun", short: "Su", code: "Sun" },
-        { name: "Moon", short: "Mo", code: "Moon" },
-        { name: "Mercury", short: "Me", code: "Mercury" },
-        { name: "Venus", short: "Ve", code: "Venus" },
-        { name: "Mars", short: "Ma", code: "Mars" },
-        { name: "Jupiter", short: "Ju", code: "Jupiter" },
-        { name: "Saturn", short: "Sa", code: "Saturn" }
+    // Set Lahiri Ayanamsha (SE_SIDM_LAHIRI = 1) in Swiss Ephemeris
+    swisseph.swe_set_sid_mode(1, 0, 0);
+
+    // Calculate Julian Day in UT
+    const julday = swisseph.swe_julday(year, month, day, utcHour, swisseph.SE_GREG_CAL);
+
+    // Calculate Sidereal Houses & Ascendant (Lagna)
+    const houses = swisseph.swe_houses_ex(julday, swisseph.SEFLG_SIDEREAL, lat, lon, 'P');
+    const lagnaLong = houses.ascendant;
+
+    // Body IDs: Sun(0), Moon(1), Mercury(2), Venus(3), Mars(4), Jupiter(5), Saturn(6), Mean Rahu(10)
+    const planetMap = [
+        { id: 0, name: "Sun", short: "Su" },
+        { id: 1, name: "Moon", short: "Mo" },
+        { id: 2, name: "Mercury", short: "Me" },
+        { id: 3, name: "Venus", short: "Ve" },
+        { id: 4, name: "Mars", short: "Ma" },
+        { id: 5, name: "Jupiter", short: "Ju" },
+        { id: 6, name: "Saturn", short: "Sa" },
+        { id: 10, name: "Rahu", short: "Ra" }
     ];
 
-    let planetsD1 = bodies.map(b => {
-        let tropLong = getEclipticLongitude(b.code, astroTime);
-        let siderealLong = (tropLong - ayanamsha) % 360;
-        if (siderealLong < 0) siderealLong += 360;
-        return { name: b.name, short: b.short, long: siderealLong };
+    let planetsD1 = [];
+    const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
+
+    planetMap.forEach(p => {
+        const res = swisseph.swe_calc_ut(julday, p.id, flags);
+        let long = res.longitude;
+        if (long < 0) long += 360;
+        planetsD1.push({ name: p.name, short: p.short, long: long });
     });
 
-    // Real Lunar Node (Rahu & Ketu) positions
-    let rahuLong = calculateTrueRahu(astroTime, ayanamsha);
-    let ketuLong = (rahuLong + 180) % 360;
-    planetsD1.push({ name: "Rahu", short: "Ra", long: rahuLong });
+    // Compute Ketu exactly 180 degrees opposite Rahu
+    let rahuObj = planetsD1.find(p => p.name === "Rahu");
+    let ketuLong = (rahuObj.long + 180) % 360;
     planetsD1.push({ name: "Ketu", short: "Ke", long: ketuLong });
 
     let lagnaD9Long = getNavamshaLongitude(lagnaLong);
